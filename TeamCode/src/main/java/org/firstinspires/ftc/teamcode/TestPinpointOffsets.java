@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -16,7 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
  * <X,Y> position to remain constant as we navigate if we rotate to a new angle.
  */
 @TeleOp(name = "Pinpoint Odo Offsets", group = "Test")
-//@Disabled
+@Disabled
 public class TestPinpointOffsets extends LinearOpMode {
 
     //====== GOBILDA PINPOINT ODOMETRY COMPUTER ======
