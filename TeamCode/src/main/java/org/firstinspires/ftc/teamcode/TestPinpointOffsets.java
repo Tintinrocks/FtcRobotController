@@ -107,7 +107,7 @@ public class TestPinpointOffsets extends LinearOpMode {
         }
         odom.setEncoderResolution( GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD );
         odom.setEncoderDirections( GoBildaPinpointDriver.EncoderDirection.REVERSED,
-                                  GoBildaPinpointDriver.EncoderDirection.FORWARD);
+                                  GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odom.resetPosAndIMU();
 
         // Query hardware info

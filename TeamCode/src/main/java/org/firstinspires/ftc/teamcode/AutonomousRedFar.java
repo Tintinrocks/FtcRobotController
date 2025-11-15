@@ -2,16 +2,10 @@
  */
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P1;
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P2;
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P3;
-
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-
-import org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState;
 
 import java.util.List;
 
@@ -128,8 +122,8 @@ public class AutonomousRedFar extends AutonomousBase {
             sleep( startDelaySec * 1000 );
         }
 
-        // Score Preload Balls
-        scorePreloadBalls( obeliskID );
+        // Score Preload Balls from the FAR zone
+        scorePreloadBallsFromFar( obeliskID, redAlliance, 0.55 );
 //      driveToFirstTickMark();
 //      scorePreloadBalls();
 
@@ -140,73 +134,6 @@ public class AutonomousRedFar extends AutonomousBase {
         robot.driveTrainMotorsZero();
     } // mainAutonomous
 
-    /*--------------------------------------------------------------------------------------------*/
-    private void scorePreloadBalls( int obeliskID ) {
-        // Turn on flywheel motor
-        if( opModeIsActive() ) {
-            telemetry.addData("Motion", "Flywheel Ramp Up");
-            telemetry.update();
-            // Start to ramp up the shooter
-            double shooterPower = 0.55;
-            robot.shooterMotor1.setPower( shooterPower );
-            robot.shooterMotor2.setPower( shooterPower );
-            // Start with robot facing the goal (not the obelisk)
-            driveToPosition(-12.0, 0.0, 0.0, DRIVE_SPEED_10, TURN_SPEED_15, DRIVE_TO);
-            // Drive forward and rotate 180deg so we can shoot
-//          driveToPosition(11.0, 0.0, 0.0, DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_THRU);
-            // Point the turret toward the goal
-            robot.shooterServo.setPosition(0.5);  // NOT ACTUALLY USED
-            robot.turretServo1.setPosition(0.55); // rotated right toward RED goal
-//          driveToPosition(28.5, 0.0, -179.0, DRIVE_SPEED_30, TURN_SPEED_15, DRIVE_TO);
-            // Turn on the collector to help retain balls during spindexing
-            robot.intakeMotor.setPower(0.90);
-            sleep(4000 ); // Wait a bit longer for flywheels to reach speed
-            // spindexer is loaded in P3=PURPLE P2=PURPLE P1=GREEN order
-            //  21 = GPP (green purple purple)
-            //  22 = PGP (purple green purple)
-            //  23 = PPG (purple purple green)
-            SpindexerState[] shootOrder = getShootOrder(obeliskID);
-            for(int i=0; i<shootOrder.length; i++) {
-                // rotate to the next position
-                robot.spinServoSetPosition( shootOrder[i] );
-                launchBall();
-                if( !opModeIsActive() ) break;
-                sleep(2000 );
-            }
-        } // opModeIsActive
-    } // scoreSamplePreload
-
-    SpindexerState[] getShootOrder(int obeliskID) {
-        // Note: common OBELISK april tags for both RED & BLUE alliance
-        //  21 = GPP (green purple purple)
-        //  22 = PGP (purple green purple)
-        //  23 = PPG (purple purple green)
-
-        // Based on our preload pattern:
-        // SPIN_P2 = purple
-        // SPIN_P1 = purple
-        // SPIN_P3 = green
-
-        switch (obeliskID) {
-            case 21:
-                return new SpindexerState[] {SPIN_P3, SPIN_P2, SPIN_P1};
-            case 22:
-                return new SpindexerState[] {SPIN_P2, SPIN_P3, SPIN_P1};
-            case 23:
-                return new SpindexerState[] {SPIN_P2, SPIN_P1, SPIN_P3};
-            default:
-                return new SpindexerState[0];
-        }
-    }
-
-    private void launchBall(){
-        robot.startInjectionStateMachine();
-        do {
-            sleep(50);
-            if( !opModeIsActive() ) break;
-            performEveryLoop();
-        } while (robot.liftServoBusyU || robot.liftServoBusyD);
-    }
 
     private void driveToFirstTickMark() {
 //        driveToPosition()

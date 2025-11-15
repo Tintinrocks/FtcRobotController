@@ -2,10 +2,6 @@
  */
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P1;
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P2;
-import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P3;
-
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -168,7 +164,7 @@ public class AutonomousBlueNear extends AutonomousBase {
             //  21 = GPP (green purple purple)
             //  22 = PGP (purple green purple)
             //  23 = PPG (purple purple green)
-            SpindexerState[] shootOrder = getShootOrder(obeliskID);
+            SpindexerState[] shootOrder = getObeliskShootOrder(obeliskID);
             for(int i=0; i<shootOrder.length; i++) {
                 // rotate to the next position
                 robot.spinServoSetPosition( shootOrder[i] );
@@ -178,38 +174,6 @@ public class AutonomousBlueNear extends AutonomousBase {
             }
         } // opModeIsActive
     } // scoreSamplePreload
-
-    SpindexerState[] getShootOrder(int obeliskID) {
-        // Note: common OBELISK april tags for both RED & BLUE alliance
-        //  21 = GPP (green purple purple)
-        //  22 = PGP (purple green purple)
-        //  23 = PPG (purple purple green)
-
-        // Based on our preload pattern:
-        // SPIN_P2 = purple
-        // SPIN_P1 = purple
-        // SPIN_P3 = green
-
-        switch (obeliskID) {
-            case 21:
-                return new SpindexerState[] {SPIN_P3, SPIN_P2, SPIN_P1};
-            case 22:
-                return new SpindexerState[] {SPIN_P2, SPIN_P3, SPIN_P1};
-            case 23:
-                return new SpindexerState[] {SPIN_P2, SPIN_P1, SPIN_P3};
-            default:
-                return new SpindexerState[0];
-        }
-    }
-
-    private void launchBall(){
-        robot.startInjectionStateMachine();
-        do {
-            sleep(50);
-            if( !opModeIsActive() ) break;
-            performEveryLoop();
-        } while (robot.liftServoBusyU || robot.liftServoBusyD);
-    }
 
     private void driveToFirstTickMark() {
 //        driveToPosition()

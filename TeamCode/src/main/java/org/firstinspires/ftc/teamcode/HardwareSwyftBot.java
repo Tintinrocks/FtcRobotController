@@ -140,7 +140,7 @@ public class HardwareSwyftBot
 
     /* local OpMode members. */
     protected HardwareMap hwMap = null;
-    private ElapsedTime period  = new ElapsedTime();
+    private final ElapsedTime period  = new ElapsedTime();
 
     /* Constructor */
     public HardwareSwyftBot(){
@@ -163,11 +163,11 @@ public class HardwareSwyftBot
 
         // Locate the odometry controller in our hardware settings
         odom = hwMap.get(GoBildaPinpointDriver.class,"odom");    // Expansion Hub I2C port 1
-        odom.setOffsets(-171.80, +78.06, DistanceUnit.MM);   // odometry pod x,y locations relative center of robot
+        odom.setOffsets(0.0, 0.0, DistanceUnit.MM);   // odometry pod x,y locations relative center of robot
 //      odom.setOffsets(0.00, 0.00, DistanceUnit.MM);      // odometry pod x,y locations relative center of robot  2 2
         odom.setEncoderResolution( GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD ); // 4bar pods
         odom.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
-                                  GoBildaPinpointDriver.EncoderDirection.FORWARD);
+                                  GoBildaPinpointDriver.EncoderDirection.REVERSED);
         if( isAutonomous ) {
             odom.resetPosAndIMU();
         }
@@ -232,12 +232,12 @@ public class HardwareSwyftBot
         shooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooterMotor1.setZeroPowerBehavior( DcMotor.ZeroPowerBehavior.FLOAT);
         shooterMotor2.setZeroPowerBehavior( DcMotor.ZeroPowerBehavior.FLOAT);
-        // NOTE ON PIDF CONTROL:  The PID coefficnets (10/3/0) are the defaults.
+        // NOTE ON PIDF CONTROL:  The PID coefficients (10/3/0) are the defaults.
         // Proportional (P) is increased to 200 as a result of the large shooter mass.
         // The feed-forward value of 12 is used to maintain speed control under
         // load (meaning when the ball enters the shooter and slows down the flywheel)
-        PIDFCoefficients shooterPIDF = new PIDFCoefficients( 10.0, 3.0, 0.0, 12.0 );
-//      PIDFCoefficients shooterPIDF = new PIDFCoefficients( 200.0, 3.0, 0.0, 12.0 );
+//      PIDFCoefficients shooterPIDF = new PIDFCoefficients( 10.0, 3.0, 0.0, 12.0 );
+        PIDFCoefficients shooterPIDF = new PIDFCoefficients( 200.0, 3.0, 0.0, 0.0 );
         shooterMotor1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
         shooterMotor2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
 
@@ -378,35 +378,35 @@ public class HardwareSwyftBot
     {
         switch( position ) {
             case SPIN_P1 : spinServo.setPosition(SPIN_SERVO_P1);
-                           spinServoCurPos = SpindexerState.SPIN_P1;
-                           break;
+                spinServoCurPos = SpindexerState.SPIN_P1;
+                break;
             case SPIN_P2 : spinServo.setPosition(SPIN_SERVO_P2);
-                           spinServoCurPos = SpindexerState.SPIN_P2;
-                           break;
+                spinServoCurPos = SpindexerState.SPIN_P2;
+                break;
             case SPIN_P3 : spinServo.setPosition(SPIN_SERVO_P3);
-                           spinServoCurPos = SpindexerState.SPIN_P3;
-                           break;
+                spinServoCurPos = SpindexerState.SPIN_P3;
+                break;
             case SPIN_INCREMENT :
-                           if( spinServoCurPos == SpindexerState.SPIN_P1 ) {
-                               spinServo.setPosition(SPIN_SERVO_P2);
-                               spinServoCurPos = SpindexerState.SPIN_P2;
-                           }
-                           else if( spinServoCurPos == SpindexerState.SPIN_P2 ) {
-                               spinServo.setPosition(SPIN_SERVO_P3);
-                               spinServoCurPos = SpindexerState.SPIN_P3;
-                           } // else no room to increment further!
-                           break;
+                if( spinServoCurPos == SpindexerState.SPIN_P1 ) {
+                    spinServo.setPosition(SPIN_SERVO_P2);
+                    spinServoCurPos = SpindexerState.SPIN_P2;
+                }
+                else if( spinServoCurPos == SpindexerState.SPIN_P2 ) {
+                    spinServo.setPosition(SPIN_SERVO_P3);
+                    spinServoCurPos = SpindexerState.SPIN_P3;
+                } // else no room to increment further!
+                break;
             case SPIN_DECREMENT :
-                           if( spinServoCurPos == SpindexerState.SPIN_P3 ) {
-                               spinServo.setPosition(SPIN_SERVO_P2);
-                               spinServoCurPos = SpindexerState.SPIN_P2;
-                           }
-                           else if( spinServoCurPos == SpindexerState.SPIN_P2 ) {
-                               spinServo.setPosition(SPIN_SERVO_P1);
-                               spinServoCurPos = SpindexerState.SPIN_P1;
-                           } // else no room to increment further!
-                           break;
-        default:
+                if( spinServoCurPos == SpindexerState.SPIN_P3 ) {
+                    spinServo.setPosition(SPIN_SERVO_P2);
+                    spinServoCurPos = SpindexerState.SPIN_P2;
+                }
+                else if( spinServoCurPos == SpindexerState.SPIN_P2 ) {
+                    spinServo.setPosition(SPIN_SERVO_P1);
+                    spinServoCurPos = SpindexerState.SPIN_P1;
+                } // else no room to increment further!
+                break;
+            default:
                 break;
         } // switch()
     } // spinServoSetPosition
