@@ -2,6 +2,8 @@
 */
 package org.firstinspires.ftc.teamcode;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_DECREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_INCREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P1;
@@ -13,8 +15,10 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * TeleOp for the 2025-2026 FTC DECODE Season
@@ -77,6 +81,7 @@ public abstract class Teleop extends LinearOpMode {
 
     /* Declare OpMode members. */
     HardwareSwyftBot robot = new HardwareSwyftBot();
+    AprilTagVision aprilTagVision;
     // sets unique behavior based on alliance
     public abstract void setAllianceSpecificBehavior();
 
@@ -97,6 +102,10 @@ public abstract class Teleop extends LinearOpMode {
         // Initialize robot hardware (not autonomous mode)
         robot.init(hardwareMap,false);
         setAllianceSpecificBehavior();
+
+        // Initialize vision system
+        aprilTagVision = new AprilTagVision();
+        aprilTagVision.init(hardwareMap);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("State", "Ready");
@@ -148,6 +157,18 @@ public abstract class Teleop extends LinearOpMode {
                 telemetry.addData("Velocity", velStr);
                 telemetry.addData("Status", robot.odom.getDeviceStatus());
             }
+
+
+            // Process AprilTag detections
+            Optional<AprilTagDetection> closestTagOptional = aprilTagVision.getClosestDetection();
+            if (closestTagOptional.isPresent()) {
+                AprilTagDetection closestTag = closestTagOptional.get();
+                telemetry.addData("Closest Tag ID", closestTag.id);
+                telemetry.addData("Tag Range", "%.2f in", closestTag.ftcPose.range);
+                telemetry.addData("Tag Bearing", "%.2f deg", closestTag.ftcPose.bearing);
+            } else {
+                telemetry.addData("Closest Tag", "None detected");
+
 
             // Check for an OFF-to-ON toggle of the gamepad1 TRIANGLE button (toggles SINGLE-MOTOR drive control)
             if( gamepad1_triangle_now && !gamepad1_triangle_last)
@@ -222,6 +243,39 @@ public abstract class Teleop extends LinearOpMode {
             cycleTimeElapsed = (nanoTimeCurr - nanoTimePrev)/ 1000000.0;   // msec
             cycleTimeHz =  1000.0 / cycleTimeElapsed;
 
+            //April Tag Vision and Ball Color Tracking
+
+
+            AprilTagVision aprilTagVision = new AprilTagVision();
+            aprilTagVision.init(hardwareMap); // Pass the hardwareMap from the OpMode
+
+            telemetry.addData("Status", "Vision initialized. Ready to start.");
+            telemetry.update();
+
+            // 3. Wait for the driver to press the START button
+            waitForStart();
+
+            // 4. Main loop that runs after START is pressed
+            while (opModeIsActive()) {
+                AprilTagDetection closestTag = aprilTagVision.getClosestDetection();
+                if (closestTag.isPresent()) {
+                    telemetry.addData("Closest Tag", "ID: %d", closestTag.get().id);
+                } else {
+                    telemetry.addData("Closest Tag", "None detected");
+                }
+
+                // Update the telemetry on the Driver Station screen
+                telemetry.update();
+
+                // Give the processor a brief pause to prevent flooding the logs
+                Thread.sleep(20);
+            }
+
+            // 5. Clean up when the OpMode is finished
+            // This is important to release camera resources.
+            aprilTagVision.close();
+
+
             // Update telemetry data
             telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
             telemetry.addData("Shooter RPM", "%.1f", robot.shooterMotorVel );
@@ -233,6 +287,9 @@ public abstract class Teleop extends LinearOpMode {
 //          robot.waitForTick(40);
         } // opModeIsActive
 
+
+        // Clean up resources
+        aprilTagVision.close();
     } // runOpMode
 
     /*---------------------------------------------------------------------------------*/
@@ -617,5 +674,4 @@ public abstract class Teleop extends LinearOpMode {
             }
         }
     } // processInjector
-
 } // Teleop
