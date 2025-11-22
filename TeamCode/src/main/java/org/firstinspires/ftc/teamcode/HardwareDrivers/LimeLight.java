@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode.HardwareDrivers;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.hardware.limelightvision.Pose3D;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional; // ADD THIS IMPORT for Optional
 
 /**
  * A driver class for managing a Limelight camera.
@@ -23,7 +23,6 @@ public class LimeLight {
      */
     public void init(HardwareMap hardwareMap) {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        // Set a reasonable poll rate. 100Hz is very high and can flood the bus; 30Hz is often sufficient.
         limelight.setPollRateHz(30);
         limelight.start(); // This tells Limelight to start looking!
     }
@@ -47,19 +46,6 @@ public class LimeLight {
         telemetry.addData("Target X", result.getTx());
         telemetry.addData("Target Y", result.getTy());
         telemetry.addData("Target Area", result.getTa());
-
-        // Add robot pose data if available
-        Pose3D botpose = result.getBotpose();
-        // Check if botpose AND its position are not null before using them.
-        if (botpose != null && botpose.getPosition() != null) {
-            double x = botpose.getPosition().x;
-            double y = botpose.getPosition().y;
-            // Simplify the telemetry call by combining formatting and adding data.
-            telemetry.addData("Robot Pose (X, Y)", "(%.2f, %.2f)", x, y);
-        } else {
-            // Add feedback for when the pose is null, so you know why it's not displaying.
-            telemetry.addData("Robot Pose (X, Y)", "Not Available");
-        }
 
         // Process and display color target data
         List<LLResultTypes.ColorResult> colorTargets = result.getColorResults();
