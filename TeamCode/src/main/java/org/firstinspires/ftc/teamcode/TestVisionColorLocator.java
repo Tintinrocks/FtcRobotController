@@ -19,14 +19,13 @@
  * SOFTWARE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode;
 
 import android.util.Size;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.SortOrder;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -61,8 +60,8 @@ import java.util.List;
  */
 
 @Disabled
-@TeleOp(name = "Concept: Vision Color-Locator", group = "Concept")
-public class ConceptVisionColorLocator extends LinearOpMode
+@TeleOp(name = "Sensor: Vision Color-Locator", group = "Sensor")
+public class TestVisionColorLocator extends LinearOpMode
 {
     @Override
     public void runOpMode()
@@ -108,7 +107,7 @@ public class ConceptVisionColorLocator extends LinearOpMode
          *                                    "pixels" in the range of 2-4 are suitable for low res images.
          */
         ColorBlobLocatorProcessor colorLocator = new ColorBlobLocatorProcessor.Builder()
-                .setTargetColorRange(ColorRange.BLUE)         // use a predefined color match
+                .setTargetColorRange(ColorRange.GREEN)         // use a predefined color match (was BLUE)
                 .setContourMode(ColorBlobLocatorProcessor.ContourMode.EXTERNAL_ONLY)    // exclude blobs inside blobs
                 .setRoi(ImageRegion.asUnityCenterCoordinates(-0.5, 0.5, 0.5, -0.5))  // search central 1/4 of camera view
                 .setDrawContours(true)                        // Show contours on the Stream Preview
@@ -130,7 +129,7 @@ public class ConceptVisionColorLocator extends LinearOpMode
         VisionPortal portal = new VisionPortal.Builder()
                 .addProcessor(colorLocator)
                 .setCameraResolution(new Size(320, 240))
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCamera(hardwareMap.get(WebcamName.class, "Webcam1"))
                 .build();
 
         telemetry.setMsTransmissionInterval(50);   // Speed up telemetry updates, Just use for debugging.
@@ -149,39 +148,54 @@ public class ConceptVisionColorLocator extends LinearOpMode
              *   Note:  All contours will be still displayed on the Stream Preview, but only those that satisfy the filter
              *          conditions will remain in the current list of "blobs".  Multiple filters may be used.
              *
-             * Use any of the following filters.
+             * To perform a filter
+             *   ColorBlobLocatorProcessor.Util.filterByCriteria(criteria, minValue, maxValue, blobs);
              *
-             * ColorBlobLocatorProcessor.Util.filterByArea(minArea, maxArea, blobs);
+             * The following criteria are currently supported.
+             *
+             * ColorBlobLocatorProcessor.BlobCriteria.BY_CONTOUR_AREA
              *   A Blob's area is the number of pixels contained within the Contour.  Filter out any that are too big or small.
              *   Start with a large range and then refine the range based on the likely size of the desired object in the viewfinder.
              *
-             * ColorBlobLocatorProcessor.Util.filterByDensity(minDensity, maxDensity, blobs);
+             * ColorBlobLocatorProcessor.BlobCriteria.BY_DENSITY
              *   A blob's density is an indication of how "full" the contour is.
              *   If you put a rubber band around the contour you would get the "Convex Hull" of the contour.
              *   The density is the ratio of Contour-area to Convex Hull-area.
              *
-             * ColorBlobLocatorProcessor.Util.filterByAspectRatio(minAspect, maxAspect, blobs);
+             * ColorBlobLocatorProcessor.BlobCriteria.BY_ASPECT_RATIO
              *   A blob's Aspect ratio is the ratio of boxFit long side to short side.
              *   A perfect Square has an aspect ratio of 1.  All others are > 1
+             *
+             * ColorBlobLocatorProcessor.BlobCriteria.BY_ARC_LENGTH
+             *   A blob's arc length is the perimeter of the blob.
+             *   This can be used in conjunction with an area filter to detect oddly shaped blobs.
+             *
+             * ColorBlobLocatorProcessor.BlobCriteria.BY_CIRCULARITY
+             *   A blob's circularity is how circular it is based on the known area and arc length.
+             *   A perfect circle has a circularity of 1.  All others are < 1
              */
-            ColorBlobLocatorProcessor.Util.filterByArea(50, 20000, blobs);  // filter out very small blobs.
+            ColorBlobLocatorProcessor.Util.filterByCriteria(
+                    ColorBlobLocatorProcessor.BlobCriteria.BY_CONTOUR_AREA,
+                    50, 20000, blobs);  // filter out very small blobs.
 
             /*
              * The list of Blobs can be sorted using the same Blob attributes as listed above.
              * No more than one sort call should be made.  Sorting can use ascending or descending order.
-             *     ColorBlobLocatorProcessor.Util.sortByArea(SortOrder.DESCENDING, blobs);      // Default
-             *     ColorBlobLocatorProcessor.Util.sortByDensity(SortOrder.DESCENDING, blobs);
-             *     ColorBlobLocatorProcessor.Util.sortByAspectRatio(SortOrder.DESCENDING, blobs);
+             *     ColorBlobLocatorProcessor.Util.sortByCriteria(ColorBlobLocatorProcessor.BlobCriteria.BY_CONTOUR_AREA SortOrder.DESCENDING, blobs); // Default
+             *     ColorBlobLocatorProcessor.Util.sortByCriteria(ColorBlobLocatorProcessor.BlobCriteria.BY_DENSITY SortOrder.DESCENDING, blobs);
+             *     ColorBlobLocatorProcessor.Util.sortByCriteria(ColorBlobLocatorProcessor.BlobCriteria.BY_ASPECT_RATIO SortOrder.DESCENDING, blobs);
+             *     ColorBlobLocatorProcessor.Util.sortByCriteria(ColorBlobLocatorProcessor.BlobCriteria.BY_ARC_LENGTH SortOrder.DESCENDING, blobs);
+             *     ColorBlobLocatorProcessor.Util.sortByCriteria(ColorBlobLocatorProcessor.BlobCriteria.BY_CIRCULARITY SortOrder.DESCENDING, blobs);
              */
 
-            telemetry.addLine(" Area Density Aspect  Center");
+            telemetry.addLine("Area Density Aspect Arc Circle Center");
 
             // Display the size (area) and center location for each Blob.
             for(ColorBlobLocatorProcessor.Blob b : blobs)
             {
                 RotatedRect boxFit = b.getBoxFit();
-                telemetry.addLine(String.format("%5d  %4.2f   %5.2f  (%3d,%3d)",
-                          b.getContourArea(), b.getDensity(), b.getAspectRatio(), (int) boxFit.center.x, (int) boxFit.center.y));
+                telemetry.addLine(String.format("%5d  %4.2f  %5.2f %3d %5.3f (%3d,%3d)",
+                          b.getContourArea(), b.getDensity(), b.getAspectRatio(), (int) b.getArcLength(), b.getCircularity(), (int) boxFit.center.x, (int) boxFit.center.y));
             }
 
             telemetry.update();

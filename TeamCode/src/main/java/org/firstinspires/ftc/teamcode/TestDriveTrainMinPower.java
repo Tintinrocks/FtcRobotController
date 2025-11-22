@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -50,13 +50,14 @@ public class TestDriveTrainMinPower extends LinearOpMode {
 
         // Display program information
         telemetry.addLine("This app determines the minimum drivetrain");
-        telemetry.addLine("motor power that will actual move the bot.");
+        telemetry.addLine("motor power that will actually move our bot.");
         telemetry.addData("State", "Ready");
         telemetry.update();
         waitForStart();
 
         // Automate the process...
-        findMinDrivePowerToMove();
+        measDistForFixedTime();
+        measTimeForFixedDist();
 
         // Ensure all the motors are stopped when we exit
         driveTrainMotorsZero();
@@ -67,7 +68,8 @@ public class TestDriveTrainMinPower extends LinearOpMode {
  
         // Locate the odometry controller in our hardware settings
         odom = hardwareMap.get(GoBildaPinpointDriver.class,"odom");   // Control Hub I2C port 3
-        odom.setOffsets(-148.0, +88.4, DistanceUnit.MM);  // odometry pod x,y offsets relative center of robot
+        odom.setOffsets(-144.0, +88.0, DistanceUnit.MM); // odometry pod x,y offsets relative center of robot
+//      odom.setOffsets(-148.0, +88.4, DistanceUnit.MM); // odometry pod x,y offsets relative center of robot
         odom.setEncoderResolution( GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD );
         odom.setEncoderDirections( GoBildaPinpointDriver.EncoderDirection.REVERSED,
                                    GoBildaPinpointDriver.EncoderDirection.REVERSED );
@@ -108,8 +110,8 @@ public class TestDriveTrainMinPower extends LinearOpMode {
     } // initializeHardware
 
     /*--------------------------------------------------------------------------------------------*/
-    // The 1st task is to determine min power to achieve any movement at all (no matter how slowly)
-    public void findMinDrivePowerToMove()
+    // Assess motion by measuring "mm travelled in a constant time" for various low power levels
+    public void measDistForFixedTime()
     {
         double posDist, negDist, avgDist;
         long msecSleep = 200;
@@ -125,6 +127,7 @@ public class TestDriveTrainMinPower extends LinearOpMode {
         for( int i=1; i<=14; i++ ) {
             double motorPower = 0.005 * i;
             // Note our starting Y position
+            readPinpointUpdateVariables();
             startYinches = currYinches;
             // Apply the power in the POSITIVE direction
             driveTrainFwdRev( +motorPower );
@@ -134,6 +137,7 @@ public class TestDriveTrainMinPower extends LinearOpMode {
             readPinpointUpdateVariables();
             posDist = Math.abs( currYinches - startYinches );
             // Note new our starting Y position
+            readPinpointUpdateVariables();
             startYinches = currYinches;
             // Apply the power in the NEGATIVE direction
             driveTrainFwdRev( -motorPower );
@@ -145,36 +149,73 @@ public class TestDriveTrainMinPower extends LinearOpMode {
             // Compute the AVERAGE of POS & NEG movements (converted to "mm")
             avgDist = 25.4 * (posDist+negDist)/2.0f;
             // Add this to our working telemetry
-            telemetry.addData("Pwr","%.2f -> %.2f mm", motorPower, avgDist );
+            telemetry.addData("Pwr","%.3f -> %.3f mm", motorPower, avgDist );
         } // i
 
         telemetry.update();
         waitForUser();
 
-    } // findMinDrivePowerToMove
+    } // measDistForFixedTime
 
     /*--------------------------------------------------------------------------------------------*/
-    // Evaluate the distance traveled for a few settings around the min power
-    public void findHowFarHowFast()
+    // Assess motion by measuring "time required to travel specific dist" for various low power levels
+    public void measTimeForFixedDist()
     {
- /*
+        double distMoved, posTime, negTime, avgTime;
+        double inchDist = 0.75; // 19 mm
+        
+        telemetry.addLine("2. Apply POS & NEG motor power for 0.75in");
         readPinpointUpdateVariables();
         telemetry.addData("Pinpoint Status", odom.getDeviceStatus() );
         telemetry.addData("Position","x=%.2f, y=%.2f in  (%.2f deg)", currXinches, currYinches, currAngle );
         telemetry.addData("Velocity","%.2f, %.2f inch/sec  (%.2f deg/sec)", currXvel, currYvel, currAnglevel );
+        telemetry.update();
 
-        // Reset the timer
-        driveTimer.reset();
-        driveTimer.milliseconds()
+        // Evaluate from 0.5% to 7.0% in 0.5% increments
+        for( int i=1; i<=14; i++ ) {
+            double motorPower = 0.005 * i;
+            // Note our starting Y position
+            readPinpointUpdateVariables();
+            startYinches = currYinches;
+            // Reset the timer
+            driveTimer.reset();
+            // Apply the power in the POSITIVE direction
+            driveTrainFwdRev( +motorPower );
+            // Wait up to 2.0 seconds to travel our desired distance
+            do {
+               // How far have we moved?
+               readPinpointUpdateVariables();
+               distMoved =  Math.abs( currYinches - startYinches );
+               // What's the current elapsed time?
+               posTime = driveTimer.milliseconds();
+            } while( (distMoved < inchDist) && (posTime < 2000.0) );
+            driveTrainMotorsZero();
+            // Note new our starting Y position
+            readPinpointUpdateVariables();
+            startYinches = currYinches;
+            // Reset the timer
+            driveTimer.reset();
+            // Apply the power in the NEGATIVE direction
+            driveTrainFwdRev( -motorPower );
+            // Wait up to 2.0 seconds to travel our desired distance
+            do {
+               // How far have we moved?
+               readPinpointUpdateVariables();
+               distMoved =  Math.abs( currYinches - startYinches );
+               // What's the current elapsed time?
+               negTime = driveTimer.milliseconds();
+            } while( (distMoved < inchDist) && (posTime < 2000.0) );
+            driveTrainMotorsZero();
+            // Compute the AVERAGE of POS & NEG movements (converted to "mm")
+            avgTime = (posTime + negTime)/2.0f;
+            // Add this to our working telemetry
+            telemetry.addData("Dist","%.3f -> %.0f msec", motorPower, avgTime );
+        } // i
 
+        telemetry.update();
         waitForUser();
 
-        public final static int LOG_SIZE = 256;   // 256 entries = 2.5 seconds @ 10msec/100Hz
-        protected double[] logTime = new double[LOG_SIZE];  // Drive time (msec)
-        protected double[] logDist = new double[LOG_SIZE];  // Drive distance (mm)
-*/
-    } // findHowFarHowFast
-
+    } // measTimeForFixedDist
 
     /*--------------------------------------------------------------------------------------------*/
     public void readPinpointUpdateVariables()
