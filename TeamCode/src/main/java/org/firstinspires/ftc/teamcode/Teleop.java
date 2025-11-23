@@ -17,6 +17,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -244,8 +246,6 @@ public abstract class Teleop extends LinearOpMode {
             cycleTimeHz =  1000.0 / cycleTimeElapsed;
 
             //April Tag Vision and Ball Color Tracking
-
-
             AprilTagVision aprilTagVision = new AprilTagVision();
             aprilTagVision.init(hardwareMap); // Pass the hardwareMap from the OpMode
 
@@ -255,11 +255,13 @@ public abstract class Teleop extends LinearOpMode {
             // 3. Wait for the driver to press the START button
             waitForStart();
 
+            int id = 0;
+            List<String> colorSet = new ArrayList<>();
             // 4. Main loop that runs after START is pressed
             while (opModeIsActive()) {
-                AprilTagDetection closestTag = aprilTagVision.getClosestDetection();
+                Optional<AprilTagDetection> closestTag = aprilTagVision.getClosestDetection();
                 if (closestTag.isPresent()) {
-                    telemetry.addData("Closest Tag", "ID: %d", closestTag.get().id);
+                    telemetry.addData("Closest Tag", "ID: %d", id = closestTag.get().id);
                 } else {
                     telemetry.addData("Closest Tag", "None detected");
                 }
@@ -274,7 +276,27 @@ public abstract class Teleop extends LinearOpMode {
             // 5. Clean up when the OpMode is finished
             // This is important to release camera resources.
             aprilTagVision.close();
-
+            switch(id){
+                case 21:
+                    colorSet.add("green");
+                    colorSet.add("purple");
+                    colorSet.add("purple");
+                    break;
+                case 22:
+                    colorSet.add("purple");
+                    colorSet.add("green");
+                    colorSet.add("purple");
+                    break;
+                case 23:
+                    colorSet.add("purple");
+                    colorSet.add("purple");
+                    colorSet.add("green");
+                    break;
+                default:
+                    colorSet.add("green");
+                    colorSet.add("purple");
+                    colorSet.add("purple");
+                    break;
 
             // Update telemetry data
             telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
