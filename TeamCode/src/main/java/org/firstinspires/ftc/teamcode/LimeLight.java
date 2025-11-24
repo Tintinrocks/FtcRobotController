@@ -12,7 +12,6 @@ import java.util.List;
 public class LimeLight {
 
     public enum DetectedColor { PURPLE, GREEN, NONE }
-
     private Limelight3A limelight;
     public DetectedColor lastDetectedColor = DetectedColor.NONE;
 

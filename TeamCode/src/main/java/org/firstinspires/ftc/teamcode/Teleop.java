@@ -245,6 +245,8 @@ public abstract class Teleop extends LinearOpMode {
             cycleTimeElapsed = (nanoTimeCurr - nanoTimePrev)/ 1000000.0;   // msec
             cycleTimeHz =  1000.0 / cycleTimeElapsed;
 
+
+    /*---------------------------------------------------------------------------------*/
             //April Tag Vision and Ball Color Tracking
             AprilTagVision aprilTagVision = new AprilTagVision();
             aprilTagVision.init(hardwareMap); // Pass the hardwareMap from the OpMode
@@ -276,7 +278,7 @@ public abstract class Teleop extends LinearOpMode {
             // 5. Clean up when the OpMode is finished
             // This is important to release camera resources.
             aprilTagVision.close();
-            switch(id){
+            switch(id) {
                 case 21:
                     colorSet.add("green");
                     colorSet.add("purple");
@@ -297,7 +299,15 @@ public abstract class Teleop extends LinearOpMode {
                     colorSet.add("purple");
                     colorSet.add("purple");
                     break;
+            }
 
+            for (int i = 0; i < colorSet.size(); i++) {
+                if (colorSet.get(i) == "green") {
+                    LimeLight.DetectedColor greencolor = LimeLight.DetectedColor.GREEN;
+                    int position = greencolor.ordinal() + 1;
+                }
+            }
+    /*---------------------------------------------------------------------------------*/
             // Update telemetry data
             telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
             telemetry.addData("Shooter RPM", "%.1f", robot.shooterMotorVel );
