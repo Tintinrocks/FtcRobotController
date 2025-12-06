@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 
 import java.util.Locale;
 
@@ -111,7 +112,6 @@ public abstract class Teleop extends LinearOpMode {
             // Normally autonomous resets encoders.  Do we need to for teleop??
             if( gamepad1_cross_now && !gamepad1_cross_last) {
                 robot.resetEncoders();
-                robot.resetGlobalCoordinatePosition();
             }
             // Pause briefly before looping
             idle();
@@ -126,7 +126,6 @@ public abstract class Teleop extends LinearOpMode {
 
             // Bulk-refresh the Control/Expansion Hub device status (motor status, digital I/O) -- FASTER!
             robot.readBulkData();
-            robot.performEveryLoop();
 
             // Request an update from the Pinpoint odometry computer (single I2C read)
             if( enableOdometry ) {
@@ -135,27 +134,26 @@ public abstract class Teleop extends LinearOpMode {
                 curX     = pos.getX(DistanceUnit.INCH);
                 curY     = pos.getY(DistanceUnit.INCH);
                 curAngle = pos.getHeading(AngleUnit.DEGREES);
-                String posStr = String.format(Locale.US, "{X,Y: %.1f, %.1f in  H: %.1f deg}", curX, curY, curAngle);
-                telemetry.addData("Position", posStr);
-                //==== TEMPORARY ODOMETRY CALIBRATION CODE ============================================================
-//              if(curX<minX){minX=curX;} if(curX>maxX){maxX=curX;}
-//              if(curY<minY){minY=curY;} if(curY>maxY){maxY=curY;}
-//              double x_radius_mm = 25.4 * (maxX-minX)/2.0;  // rotate 180deg; max-min is the diameter of the circle
-//              double y_radius_mm = 25.4 * (maxY-minY)/2.0;  // of error relative to the true center of the robot
-//              telemetry.addData("Odo Circle", "x=%.2f, y=%.2f mm", x_radius_mm, y_radius_mm );
-                //=====================================================================================================
-                Pose2D vel = robot.odom.getVelocity(); // x,y velocities in inch/sec; heading in deg/sec
-                String velStr = String.format(Locale.US,"{X,Y: %.1f, %.1f in/sec, HVel: %.2f deg/sec}",
-                     vel.getX(DistanceUnit.INCH), vel.getY(DistanceUnit.INCH), vel.getHeading(AngleUnit.DEGREES));
-                telemetry.addData("Velocity", velStr);
-                telemetry.addData("Status", robot.odom.getDeviceStatus());
-            }
+                if( true ) {  // change to "false" for tournaments
+                    String posStr = String.format(Locale.US, "{X,Y: %.1f, %.1f in  H: %.1f deg}", curX, curY, curAngle);
+                    telemetry.addData("Position", posStr);
+                }
+                if( true ) {  // change to "false" for tournaments
+                    String velStr = String.format(Locale.US, "{X,Y: %.1f, %.1f in/sec, H: %.2f deg/sec}",
+                            robot.odom.getVelX(DistanceUnit.INCH),
+                            robot.odom.getVelY(DistanceUnit.INCH),
+                            robot.odom.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES));
+                    telemetry.addData("Velocity", velStr);
+                    telemetry.addData("Status", robot.odom.getDeviceStatus());
+                    telemetry.addData("Pinpoint Refresh Rate", robot.odom.getFrequency());
+                }
+            } // enableOdometry
 
             // Check for an OFF-to-ON toggle of the gamepad1 TRIANGLE button (toggles SINGLE-MOTOR drive control)
-            if( gamepad1_triangle_now && !gamepad1_triangle_last)
-            {
-                driverMode = DRIVER_MODE_SINGLE_WHEEL; // allow control of individual drive motors
-            }
+//          if( gamepad1_triangle_now && !gamepad1_triangle_last)
+//          {
+//              driverMode = DRIVER_MODE_SINGLE_WHEEL; // allow control of individual drive motors
+//          }
 
             // Check for an OFF-to-ON toggle of the gamepad1 SQUARE button (toggles DRIVER-CENTRIC drive control)
             if( gamepad1_square_now && !gamepad1_square_last)
@@ -177,16 +175,7 @@ public abstract class Teleop extends LinearOpMode {
                 }
             }
 
-            if (gamepad1_l_bumper_now && !gamepad1_l_bumper_last) {
-                robot.turretServo1.setPosition(robot.computeAlignedTurretPos());
-            }
-
-            if (gamepad1_r_bumper_now && !gamepad1_r_bumper_last) {
-                robot.shooterServo.setPosition(robot.computeAlignedFlapperPos());
-            }
-
-            telemetry.addData("cross","Toggle Intake");
-            telemetry.addData("triangle","Single Wheel Control");
+//          telemetry.addData("triangle","Single Wheel Control");
             telemetry.addData("circle","Robot-centric (fwd/back modes)");
             telemetry.addData("square","Driver-centric (set joystick!)");
             telemetry.addData("d-pad","Fine control (30%)");
@@ -233,18 +222,11 @@ public abstract class Teleop extends LinearOpMode {
             cycleTimeHz =  1000.0 / cycleTimeElapsed;
 
             // Update telemetry data
-            telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
-            telemetry.addData("Shooter RPM", "%.1f", robot.shooterMotorVel );
+//          telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
+//          telemetry.addData("Shooter RPM", "%.1f %.1f", robot.shooterMotor1Vel, robot.shooterMotor2Vel );
+//          telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
 //          telemetry.addData("Angles", "IMU %.2f, Pinpoint %.2f deg)", robot.headingIMU(), curAngle );
             telemetry.addData("CycleTime", "%.1f msec (%.1f Hz)", cycleTimeElapsed, cycleTimeHz);
-            telemetry.addData("TurretAngle", robot.computeTurretAngle());
-            telemetry.addData("FlapperAngle", robot.computeLaunchAngle());
-            telemetry.addData("Turret Position", robot.computeAlignedTurretPos());
-            telemetry.addData("Flapper Position", robot.computeAlignedFlapperPos());
-            telemetry.addData("Robot Global X", robot.robotGlobalXCoordinatePosition);
-            telemetry.addData("Robot Global Y", robot.robotGlobalYCoordinatePosition);
-            telemetry.addData("Robot Global Orientation", robot.robotOrientationDegrees);
-            telemetry.addData("Robot Global Orientation Pinpoint", robot.odom.getPosition().getHeading(AngleUnit.DEGREES));
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -256,13 +238,6 @@ public abstract class Teleop extends LinearOpMode {
     /*---------------------------------------------------------------------------------*/
     void performEveryLoopTeleop() {
         robot.processInjectionStateMachine();
-//      robot.processViperSlideExtension();
-//      robot.processWormTilt();
-//      processHoverArm();
-//      processSecureArm();
-//      processScoreArm();
-//      processScoreArmSpec();
-//      processSweeper();
     } // performEveryLoopTeleop
 
     /*---------------------------------------------------------------------------------*/
