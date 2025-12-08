@@ -178,8 +178,7 @@ public abstract class Teleop extends LinearOpMode {
 //          telemetry.addData("triangle","Single Wheel Control");
             telemetry.addData("circle","Robot-centric (fwd/back modes)");
             telemetry.addData("square","Driver-centric (set joystick!)");
-            telemetry.addData("d-pad","Fine control (30%)");
-            telemetry.addData(" "," ");
+            telemetry.addData("d-pad","Fine control 15%)");
 
             if( processDpadDriveMode() == false ) {
                 // Control based on joystick; report the sensed values
@@ -223,9 +222,11 @@ public abstract class Teleop extends LinearOpMode {
 
             // Update telemetry data
 //          telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
-//          telemetry.addData("Shooter RPM", "%.1f %.1f", robot.shooterMotor1Vel, robot.shooterMotor2Vel );
-//          telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
+            telemetry.addData("Shooter RPM", "%.1f %.1f", robot.shooterMotor1Vel, robot.shooterMotor2Vel );
+            telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
 //          telemetry.addData("Angles", "IMU %.2f, Pinpoint %.2f deg)", robot.headingIMU(), curAngle );
+//          telemetry.addData("ControlHub", "%s (1=%s 2=%s)", robot.controlHubSerialNumber,
+//                  ((robot.isRobot1)? "yes":"no"), ((robot.isRobot2)? "yes":"no") );
             telemetry.addData("CycleTime", "%.1f msec (%.1f Hz)", cycleTimeElapsed, cycleTimeHz);
             telemetry.update();
 
@@ -275,7 +276,7 @@ public abstract class Teleop extends LinearOpMode {
     /*  TELE-OP: Mecanum-wheel drive control using Dpad (slow/fine-adjustment mode)    */
     /*---------------------------------------------------------------------------------*/
     boolean processDpadDriveMode() {
-        double fineControlSpeed = 0.40;
+        double fineControlSpeed = 0.15;
         boolean dPadMode = true;
         // Only process 1 Dpad button at a time
         if( gamepad1.dpad_up ) {

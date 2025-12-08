@@ -50,8 +50,7 @@ public class TeleopPositionTest extends LinearOpMode {
         robot.shooterServo.setPosition(shooterPos);
 
         turretPos = robot.TURRET_SERVO_INIT;
-        robot.turretServo1.setPosition(turretPos);
-//      robot.turretServo2.setPosition(turretPos);
+        robot.turretServo.setPosition(turretPos);
 
         // Don't start up the shooter motor until user selects it for modification
 //      robot.shooterMotor1.setPower( shooterPower );
@@ -93,19 +92,19 @@ public class TeleopPositionTest extends LinearOpMode {
                     telemetry.addData("Lower Motor Power", "%.2f", robot.shooterMotor2.getPower() );
                     break;
                 case 2 :
-                    telemetry.addData("SELECTED:", "turretServo1/2" );
+                    telemetry.addData("SELECTED:", "turretServo" );
                     telemetry.addData("Turret Servo1 Set Position", "%.3f", turretPos );
-
-                    telemetry.addData("Turret Servo1 Get Position", "%.3f", robot.turretServo1.getPosition() );
-                    //telemetry.addData("Turret Servo2 Position", "%.3f", robot.turretServo2.getPosition() );
+                    telemetry.addData("Turret Servo1 Get Position", "%.3f", robot.turretServo.getPosition() );
                     break;
                 case 3 :
                     telemetry.addData("SELECTED:", "spinServo" );
-                    telemetry.addData("Spindexer Servo Position", "%.3f", robot.spinServo.getPosition() );
+                    telemetry.addData("Spindexer Servo Command", "%.3f", robot.spinServo.getPosition() );
+                    telemetry.addData("Spindexer Servo Feedback", "%.3f deg", robot.getSpindexerAngle() );                                      
                     break;
                 case 4 :
                     telemetry.addData("SELECTED:", "liftServo" );
-                    telemetry.addData("Injector Servo Position", "%.3f", robot.liftServo.getPosition() );
+                    telemetry.addData("Injector Servo Command", "%.3f", robot.liftServo.getPosition() );
+                    telemetry.addData("Injector Servo Feedback", "%.3f deg", robot.getInjectorAngle() );                                      
                     break;
                 default :
                     selectedMechanism = 0;
@@ -140,7 +139,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         turretPos -= 0.02;
                         if( turretPos < 0.0 ) turretPos = 0.0;
                         if( turretPos > 1.0 ) turretPos = 1.0;
-                        robot.turretServo1.setPosition(turretPos);
+                        robot.turretServo.setPosition(turretPos);
 //                      robot.turretServo2.setPosition(turretPos);
                         break;
                     case 3 :
@@ -181,7 +180,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         turretPos += 0.02;
                         if( turretPos < 0.0 ) turretPos = 0.0;
                         if( turretPos > 1.0 ) turretPos = 1.0;
-                        robot.turretServo1.setPosition(turretPos);
+                        robot.turretServo.setPosition(turretPos);
 //                      robot.turretServo2.setPosition(turretPos);
                         break;
                     case 3 :
