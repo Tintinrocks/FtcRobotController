@@ -57,7 +57,9 @@ public class TeleopPositionTest extends LinearOpMode {
 //      robot.shooterMotor2.setPower( shooterPower );
     
         spinPos = robot.SPIN_SERVO_P2;
-        robot.spinServo.setPosition(spinPos);
+        if( robot.isRobot1 ) {
+            robot.spinServo.setPosition(spinPos);
+        }
 
         liftPos = robot.LIFT_SERVO_INIT;
         robot.liftServo.setPosition(liftPos);
@@ -98,8 +100,10 @@ public class TeleopPositionTest extends LinearOpMode {
                     break;
                 case 3 :
                     telemetry.addData("SELECTED:", "spinServo" );
-                    telemetry.addData("Spindexer Servo Command", "%.3f", robot.spinServo.getPosition() );
-                    telemetry.addData("Spindexer Servo Feedback", "%.3f deg", robot.getSpindexerAngle() );                                      
+                    if( robot.isRobot1 ) {
+                        telemetry.addData("Spindexer Servo Command", "%.3f", robot.spinServo.getPosition() );
+                        telemetry.addData("Spindexer Servo Feedback", "%.3f deg", robot.getSpindexerAngle() );
+                    }
                     break;
                 case 4 :
                     telemetry.addData("SELECTED:", "liftServo" );
@@ -146,7 +150,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         spinPos -= servoStepSize;
                         if( spinPos < 0.0 ) spinPos = 0.0;
                         if( spinPos > 1.0 ) spinPos = 1.0;
-                        robot.spinServo.setPosition(spinPos);
+                        if( robot.isRobot1) robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
                         liftPos -= servoStepSize;
@@ -181,13 +185,12 @@ public class TeleopPositionTest extends LinearOpMode {
                         if( turretPos < 0.0 ) turretPos = 0.0;
                         if( turretPos > 1.0 ) turretPos = 1.0;
                         robot.turretServo.setPosition(turretPos);
-//                      robot.turretServo2.setPosition(turretPos);
                         break;
                     case 3 :
                         spinPos += servoStepSize;
                         if( spinPos < 0.0 ) spinPos = 0.0;
                         if( spinPos > 1.0 ) spinPos = 1.0;
-                        robot.spinServo.setPosition(spinPos);
+                        if( robot.isRobot1) robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
                         liftPos += servoStepSize;

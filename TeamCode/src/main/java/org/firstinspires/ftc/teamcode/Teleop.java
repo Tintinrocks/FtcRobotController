@@ -223,10 +223,11 @@ public abstract class Teleop extends LinearOpMode {
             // Update telemetry data
 //          telemetry.addData("Shooter Servo", "%.3f", robot.shooterServoCurPos );
             telemetry.addData("Shooter RPM", "%.1f %.1f", robot.shooterMotor1Vel, robot.shooterMotor2Vel );
-            telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
+//          telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
 //          telemetry.addData("Angles", "IMU %.2f, Pinpoint %.2f deg)", robot.headingIMU(), curAngle );
-//          telemetry.addData("ControlHub", "%s (1=%s 2=%s)", robot.controlHubSerialNumber,
-//                  ((robot.isRobot1)? "yes":"no"), ((robot.isRobot2)? "yes":"no") );
+            telemetry.addData("Spindexer Angle", "%.1f deg (%.2f)",
+                    robot.getSpindexerAngle(), robot.spindexerPowerSetting );
+            telemetry.addLine( (robot.isRobot2)? "Robot2" : "Robot1");
             telemetry.addData("CycleTime", "%.1f msec (%.1f Hz)", cycleTimeElapsed, cycleTimeHz);
             telemetry.update();
 
@@ -234,11 +235,14 @@ public abstract class Teleop extends LinearOpMode {
 //          robot.waitForTick(40);
         } // opModeIsActive
 
+        // Ensure spindexer servo stops in case we exit while the spindexer is rotating
+        robot.spinServoCR.setPower(0.0);
     } // runOpMode
 
     /*---------------------------------------------------------------------------------*/
     void performEveryLoopTeleop() {
         robot.processInjectionStateMachine();
+        robot.processSpindexerControl();
     } // performEveryLoopTeleop
 
     /*---------------------------------------------------------------------------------*/
@@ -546,20 +550,35 @@ public abstract class Teleop extends LinearOpMode {
 
     /*---------------------------------------------------------------------------------*/
     void processSpindexer() {
-        // Rotate spindexer left or right one position
+        // Rotate spindexer left one position?
         if( gamepad2_l_bumper_now && !gamepad2_l_bumper_last) {
             robot.waitForInjector();
-            if( robot.spinServoCurPos != SPIN_P1 )
-                robot.spinServoSetPosition( SPIN_DECREMENT );
-            else
-                gamepad2.runRumbleEffect(spindexerRumbleL);            
-        } else if( gamepad2_r_bumper_now && !gamepad2_r_bumper_last) {
+            //------------
+            if (robot.isRobot1) {
+                if (robot.spinServoCurPos != SPIN_P1)
+                    robot.spinServoSetPosition(SPIN_DECREMENT);
+                else
+                    gamepad2.runRumbleEffect(spindexerRumbleL);
+            } // robot1
+            //------------
+            if (robot.isRobot2) {
+                robot.spinServoSetPositionCR(SPIN_DECREMENT);
+            } // robot2
+        }
+        // Rotate spindexer right one position?
+        else if( gamepad2_r_bumper_now && !gamepad2_r_bumper_last) {
             robot.waitForInjector();
-            if( robot.spinServoCurPos != SPIN_P3 )
-                robot.spinServoSetPosition( SPIN_INCREMENT );
-            else
-                gamepad2.runRumbleEffect(spindexerRumbleR);
-        } 
+            if( robot.isRobot1 ) {
+                if( robot.spinServoCurPos != SPIN_P3 )
+                    robot.spinServoSetPosition( SPIN_INCREMENT );
+                else
+                    gamepad2.runRumbleEffect(spindexerRumbleR);
+            } // robot1
+            //------------
+            if( robot.isRobot2 ) {
+                robot.spinServoSetPositionCR(SPIN_INCREMENT);
+            } // robot2
+        } // bumper
     } // processSpindexer
 
     /*---------------------------------------------------------------------------------*/

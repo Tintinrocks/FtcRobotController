@@ -82,7 +82,7 @@ public abstract class AutonomousBase extends LinearOpMode {
     boolean     redAlliance      = true;  // Is alliance BLUE (true) or RED (false)?
     boolean     forceAlliance    = false; // Override vision pipeline? (toggled during init phase of autonomous)
     int         initMenuSelected = 1;    // start on the first entry
-    int         initMenuMax      = 6;    // we have 6 total entries
+    int         initMenuMax      = 2;    // we have 6 total entries
     int         startDelaySec    = 0;     // 1: wait [seconds] at startup -- applies to both left/rigth starting positions
     int         scoringZones     = 0;
 
@@ -164,6 +164,9 @@ public abstract class AutonomousBase extends LinearOpMode {
     } // captureGamepad1Buttons
 
     protected void processAutonomousInitMenu(boolean auto5) {
+        // Refresh the gamepad controls
+        captureGamepad1Buttons();
+
         boolean nextEntry = (gamepad1_dpad_down_now  && !gamepad1_dpad_down_last);
         boolean prevEntry = (gamepad1_dpad_up_now    && !gamepad1_dpad_up_last);
         boolean nextValue = (gamepad1_dpad_right_now && !gamepad1_dpad_right_last);
@@ -236,7 +239,7 @@ public abstract class AutonomousBase extends LinearOpMode {
         // Update our telemetry
         performEveryLoop();
         telemetry.addData("Start Delay",  "%d sec %s", startDelaySec, ((initMenuSelected==1)? "<-":"  ") );
-        telemetry.addData("Open Gate",  gateOption.getDescription(),  ((initMenuSelected==2)? "<-":"  ") );
+        telemetry.addData("Open Gate", "%s %s", gateOption.getDescription(), ((initMenuSelected==2)? "<-":"  ") );
         telemetry.addData("Odometry","x=%.2f y=%.2f  %.2f deg",
                 robotGlobalXCoordinatePosition, robotGlobalYCoordinatePosition, Math.toDegrees(robotOrientationRadians) );
         telemetry.addLine("Preload=PPG (Green in front right!)");
