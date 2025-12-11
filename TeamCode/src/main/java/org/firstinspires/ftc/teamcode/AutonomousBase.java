@@ -100,7 +100,7 @@ public abstract class AutonomousBase extends LinearOpMode {
     // be NEVER, if we either only score 9 balls total and want them to get scored at the
     // end of autonomous, or if we plan to score more than 9 total but our alliance partner
     // tasked with opening the gate.  Similiarly, after the first pre-loaded 3 balls, or 6
-    // balls or all 9 balls, depending upon other factors.  This allows dynamic selection 
+    // balls or all 9 balls, depending upon other factors.  This allows dynamic selection
     // during init.
     public enum GateOptions {
        GATE_NEVER("NEVER"),    // NEVER open the gate during Autonomous
@@ -109,12 +109,12 @@ public abstract class AutonomousBase extends LinearOpMode {
        GATE_AFTER9("After 9"); // Open the gate after scoring 9 balls
 
        private final String description;
-   
+
        // Private constructor - called for each enum constant above
        private GateOptions(String description) {
            this.description = description;
        }
-   
+
        // Description Getter
        public String getDescription() {
            return description;
@@ -131,7 +131,7 @@ public abstract class AutonomousBase extends LinearOpMode {
            GateOptions[] values = values();
            return values[(this.ordinal() + 1) % values.length];
        }
-       
+
        // Decrement (previous) with wrap-around back to end
        public GateOptions prev() {
            GateOptions[] values = values();
@@ -139,11 +139,11 @@ public abstract class AutonomousBase extends LinearOpMode {
            // the +values.length guarantees non-negative result when ordinal() == 0
            return values[prevIndex];
        }
-       
+
     } // enum
-    
+
     GateOptions gateOption = GateOptions.GATE_NEVER;
-    
+
     //---------------------------------------------------------------------------------------
 
     ElapsedTime autonomousTimer     = new ElapsedTime();  // overall
@@ -221,7 +221,7 @@ public abstract class AutonomousBase extends LinearOpMode {
                 if( prevValue ) {
                   gateOption = gateOption.prev();
                 } // prev
-                break;                
+                break;
             default : // recover from bad state
                 initMenuSelected = 1;
                 break;
@@ -1140,9 +1140,9 @@ public abstract class AutonomousBase extends LinearOpMode {
            case 1  : x = 25.5; break;
            case 2  : x = 49.3; break;
            case 3  : x = 73.0; break;
-           default : x = 25.5; break;                
+           default : x = 25.5; break;
         } // switch()
-        // Define Y locations and angle (MIRRORED for RED vs. BLUE)               
+        // Define Y locations and angle (MIRRORED for RED vs. BLUE)
         y0  = (isRed)? -12.6 : +12.6;
         y1  = (isRed)? -17.7 : +17.7;
         y2  = (isRed)? -22.9 : +22.9;
@@ -1156,15 +1156,15 @@ public abstract class AutonomousBase extends LinearOpMode {
             robot.intakeMotor.setPower(0.90);
             // Drive into the 1st ball to collect it
             driveToPosition( x,y1,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            // Spindex it 
+            // Spindex it
             if( robot.isRobot2 ) {
               robot.spinServoSetPositionCR(SPIN_DECREMENT);
             } else {
-              robot.spinServoSetPosition(SPIN_DECREMENT);  
+              robot.spinServoSetPosition(SPIN_DECREMENT);
             }
             // Drive into the 2nd ball to collect it
             driveToPosition( x,y2,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            // Spindex it 
+            // Spindex it
             if( robot.isRobot2 ) {
               robot.spinServoSetPositionCR(SPIN_DECREMENT);
             } else {
@@ -1174,7 +1174,7 @@ public abstract class AutonomousBase extends LinearOpMode {
             driveToPosition( x,y3,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
         } // opModeIsActive
     } // collectSpikemarkFromFar
-    
+
     /*--------------------------------------------------------------------------------------------*/
     // TODO: we can/should merge this with scorePreloadBallsFromFar()
     public void scoreThreeBallsFromFar( int obeliskID, boolean isRed, double shooterPower ) {
@@ -1208,7 +1208,7 @@ public abstract class AutonomousBase extends LinearOpMode {
               }
         } // opModeIsActive
     } // scoreThreeBallsFromFar
-    
+
     /*--------------------------------------------------------------------------------------------*/
     public void scorePreloadBallsFromFar(int obeliskID, boolean isRed, double shooterPower ) {
         if( opModeIsActive() ) {

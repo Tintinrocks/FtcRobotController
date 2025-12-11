@@ -1,16 +1,19 @@
 package org.firstinspires.ftc.teamcode;
 
+import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.LogoFacingDirection;
+import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.UsbFacingDirection;
+import static java.lang.Thread.sleep;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -20,11 +23,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-
-import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.LogoFacingDirection;
-import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.UsbFacingDirection;
-import static java.lang.Thread.sleep;
-
 /*
  * Hardware class for Swyft Robotics SWYFT DRIVE V2 chassis with 86mm mecanum wheels
  */
@@ -81,6 +79,19 @@ public class HardwareSwyftBot
     protected double COUNTS_PER_INCH       = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION * MECANUM_SLIPPAGE) / (WHEEL_DIAMETER_INCHES * 3.1415);
     // The math above assumes motor encoders.  For REV odometry pods, the counts per inch is different
     protected double COUNTS_PER_INCH2      = 1738.4;  // 8192 counts-per-rev / (1.5" omni wheel * PI)
+
+    // Left Corner is (0,0) Facing obelisk is 90deg
+    double startingRobotGlobalXPosition = 72; // x inches
+    double startingRobotGlobalYPosition = 24; // y inches
+    double startingRobotOrientationDegrees = 90; // field orientation in deg
+
+    Pose2D startingPos = new Pose2D(DistanceUnit.INCH, startingRobotGlobalXPosition, startingRobotGlobalYPosition, AngleUnit.DEGREES, startingRobotOrientationDegrees);
+
+
+    // Absolute Position of Robot on the field.
+    double robotGlobalXCoordinatePosition       = 0;   // inches
+    double robotGlobalYCoordinatePosition       = 0;   // inches
+    double robotOrientationDegrees              = 0;   // degrees 90deg (facing obelisk)
 
     //====== 2025 DECODE SEASON MECHANISM MOTORS (RUN_USING_ENCODER) =====
     protected DcMotorEx intakeMotor     = null;
@@ -225,6 +236,9 @@ public class HardwareSwyftBot
             odom.resetPosAndIMU();
         }
 
+        // defines initial pose of robot on field.  white tip of far tape facing obelisk: x = 72in., y = 24in., orientation = 90deg.
+        odom.setPosition(startingPos);
+
         // Define and Initialize drivetrain motors
         frontLeftMotor  = hwMap.get(DcMotorEx.class,"FrontLeft");  // Expansion Hub port 0 (FORWARD)
         frontRightMotor = hwMap.get(DcMotorEx.class,"FrontRight"); // Control Hub   port 0 (reverse)
@@ -319,6 +333,14 @@ public class HardwareSwyftBot
     } /* init */
 
     /*--------------------------------------------------------------------------------------------*/
+    // Resets odometry starting position and angle to zero accumulated encoder counts
+    public void resetGlobalCoordinatePosition(){
+        robotGlobalXCoordinatePosition = 0.0;  // This will get overwritten the first time
+        robotGlobalYCoordinatePosition = 0.0;  // we call robot.odom.update()!
+        robotOrientationDegrees        = 0.0;
+    } // resetGlobalCoordinatePosition
+
+    /*--------------------------------------------------------------------------------------------*/
     public void resetEncoders() throws InterruptedException {
         // Initialize the injector servo first! (so it's out of the way for spindexer rotation)
         liftServo.setPosition(LIFT_SERVO_INIT);
@@ -376,6 +398,89 @@ public class HardwareSwyftBot
 //      shooterMotor1Amps = shooterMotor1.getCurrent(MILLIAMPS);
 //      shooterMotor2Amps = shooterMotor1.getCurrent(MILLIAMPS);
     } // readBulkData
+    static double thetaMaxTurret = 375;
+    static double thetaMinTurret = 0;
+    static double thetaMaxFlapper = 355;
+    static double thetaMinFlapper = 0;
+    static double STARTING_HEADING = 90;
+    static double TEST_LAUNCH_X = 6;
+    static double TEST_LAUNCH_Y = 2;
+    static double X_BIN_L = 0.6667; // in feet
+    static double Y_BIN_L = 12;   // in feet
+    static double LAUNCH_EXIT_SPEED = 22;
+    static double Z_BIN = 3.23;
+    static double Z_SHOOTER = 0.5;  // get actual measurement
+    static double TURRET_SERVO_RELATIVE_0_ANGLE = 180; // TODO: change for version 2 robot (should be zero: turret init position faces front of robot) // offset from robot heading and turret servo. (if robot is straight and turret is to the left, this angle is 90)
+    static double TURRET_SERVO_HORIZONTAL_POSITION = TURRET_SERVO_INIT; // position of turret servo when turret is aligned with the back of the robot
+    static double TURRET_SERVO_HORIZONTAL_ANGLE_INIT = TURRET_SERVO_INIT*(thetaMaxTurret - thetaMinTurret);
+    static double SHOOTER_SERVO_POS_VERTICAL = 0.64;
+
+    static double SHOOTER_SERVO_HORIZONTAL_POSITION = 0.39;
+    public double computeAlignedTurretPos() {
+        double deltaServoPos = (computeTurretAngle())/(thetaMaxTurret - thetaMinTurret); // servo 0->1 is clockwise
+        return (deltaServoPos > TURRET_SERVO_P90 || deltaServoPos < TURRET_SERVO_N90)? turretServo.getPosition() : deltaServoPos;
+    }
+
+    public double computeTurretAngle() {
+        // absolute heading of the robot relative to the field. 90 is facing obelisk (ccw is positive)
+        double driveTrainHeading = robotOrientationDegrees;
+        double xR = robotGlobalXCoordinatePosition/12.0; // convert to feet
+        double yR = robotGlobalYCoordinatePosition/12.0; // convert to feet
+        double xB = X_BIN_L;
+        double yB = Y_BIN_L;
+
+        double deltaHeading = calculateHeadingChange(xR, yR, xB, yB, driveTrainHeading);
+
+        return deltaHeading;
+    }
+
+    public double calculateHeadingChange(double xR, double yR, double xB, double yB, double heading) {
+        double angleToTarget = Math.atan2(yB-yR, xB-xR); // in radians
+        // in radians. servo clockwise direction is positive need to multiply by negative one.
+        double delta = -(angleToTarget - (Math.toRadians(heading) + Math.toRadians(TURRET_SERVO_RELATIVE_0_ANGLE)));
+        // determine angle that the turret servo needs
+        // to turn to and account for the offset of the angle of the turret servo from the robot.
+        delta = Math.toDegrees(delta);
+        delta += TURRET_SERVO_HORIZONTAL_ANGLE_INIT;
+        // Normalize to [0, 360]
+        if(delta < 0) delta += 360;
+        if(delta > 360) delta -= 360;
+        return delta;
+    }
+
+    public double computeAlignedFlapperPos() {
+        double deltaServoPos = computeLaunchAngle()/(thetaMaxFlapper - thetaMinFlapper) + SHOOTER_SERVO_HORIZONTAL_POSITION;
+        return SHOOTER_SERVO_INIT;
+        //return (deltaServoPos > SHOOTER_SERVO_POS_VERTICAL || deltaServoPos < SHOOTER_SERVO_HORIZONTAL_POSITION)? shooterServo.getPosition() : deltaServoPos;
+    }
+
+    public double computeLaunchAngle() {
+        double v = LAUNCH_EXIT_SPEED;
+        double d = Math.sqrt((Math.pow((X_BIN_L - robotGlobalXCoordinatePosition/12.0), 2) + Math.pow((Y_BIN_L - robotGlobalYCoordinatePosition/12.0),2)));
+        double h = Z_BIN - Z_SHOOTER;
+        double g = 32.174;  // ft/sec/sec gravitational constant
+
+        double discriminant = v * v * v * v - g * (g * d * d + 2 * v * v * h);
+
+        // Check if a real solution exists
+        if (discriminant < 0) return 999.9;
+
+        double sqrtTerm = Math.sqrt(discriminant);
+
+        // Two possible tangent values
+        double tanTheta1 = (v * v + sqrtTerm) / (g * d);
+        double tanTheta2 = (v * v - sqrtTerm) / (g * d);
+
+        // Compute angles in radians (2 of them)
+        double theta1 = Math.atan(tanTheta1);
+        double theta2 = Math.atan(tanTheta2);
+
+        // Ensure thetaUp > thetaDown
+        double thetaUp = Math.max(theta1, theta2);
+        double thetaDown = Math.min(theta1, theta2);
+
+        return Math.toDegrees(thetaUp);
+    } // computeAbsoluteAngle
 
     /*--------------------------------------------------------------------------------------------*/
     public void driveTrainMotors( double frontLeft, double frontRight, double rearLeft, double rearRight )
