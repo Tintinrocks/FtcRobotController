@@ -78,20 +78,6 @@ public class AutonomousBlueFar extends AutonomousBase {
         gyroTurn(TURN_SPEED_20, (startAngle + 45) );   // Turn CW 45 degrees
     } // testGyroDrive
 
-    /*--------------------------------------------------------------------------------------------*/
-    // TEST CODE: Verify odometry-based motion functions against a tape measure
-    private void unitTestOdometryDrive() {
-        telemetry.addData("Target", "x=24.0, y=0.0f, 0.00 deg (100%)");
-        // reset our timer and drive forward 20"
-        autonomousTimer.reset();
-        driveToPosition(24.0, 0.0, 0.0, DRIVE_SPEED_100, TURN_SPEED_80, DRIVE_TO);
-        double driveTime = autonomousTimer.milliseconds() / 1000.0;
-        performEveryLoop();  // ensure our odometry is updated
-        telemetry.addData("Odometry", "x=%.2f, y=%.2f, %.2f deg", robotGlobalXCoordinatePosition, robotGlobalYCoordinatePosition, Math.toDegrees(robotOrientationRadians));
-        telemetry.addData("Drive Time", "%.3f sec", driveTime);
-        telemetry.update();
-        sleep(30000);
-    }
 
     /*--------------------------------------------------------------------------------------------*/
     /* Autonomous Red Far:                                                                        */
@@ -102,19 +88,39 @@ public class AutonomousBlueFar extends AutonomousBase {
     /*   5 Score collected balls                                                                  */
     /*--------------------------------------------------------------------------------------------*/
     private void mainAutonomous( int obeliskID ) {
-
+        double shooterPowerFar = 0.55;
+        
         // Do we start with an initial delay?
         if( startDelaySec > 0 ) {
             sleep( startDelaySec * 1000 );
         }
 
-        // Score Preload Balls from the FAR zone
-        scorePreloadBallsFromFar( obeliskID, redAlliance, 0.55 );
-//      driveToFirstTickMark();
-//      scorePreloadBalls();
+        //===== Score Preload Balls (from the FAR zone) ==========
+        // Immediately start up shooter so it can be getting up to speed
+        robot.shooterMotorsSetPower( shooterPowerFar );
+        // Drive out away from wall, both to allow us to rotate the turret and not have the
+        // shooter drive belt touch the field wall, but also to be closer to the goal.
+        // Must not go so far we are no longer within the scoring zone!
+        driveToPosition( 11.0, 0.0, 0.0, DRIVE_SPEED_40, TURN_SPEED_15, DRIVE_TO);
+        // Swivel the turret toward the RED or BLUE goal (assumes field location of 11.0/0.0/0deg
+        robot.turretServo.setPosition( (redAlliance)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
+        sleep( 1500 ); // Must cover both shooter spin up and turret rotation
+        scoreThreeBallsFromFar( obeliskID );
+
+        // Collect and Score 1st spike mark
+        collectSpikemark1FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
+
+        // Collect and Score 2nd spike mark
+        collectSpikemark2FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
+            
+        // Collect and Score 3rd spike mark
+        collectSpikemark3FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
 
         // Drive away from the score line for the MOVEMENT points
-        driveToPosition(-32.0, 0.0, 0.0, DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_TO);
+        driveToPosition(32.0, 0.0, 0.0, DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_TO);
 
         // ensure motors are turned off even if we run out of time
         robot.driveTrainMotorsZero();

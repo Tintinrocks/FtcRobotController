@@ -85,7 +85,9 @@ public class TestPinpointLimelight3A extends LinearOpMode {
         UsbFacingDirection usbDirection = UsbFacingDirection.UP;       // robot1
 //      UsbFacingDirection usbDirection = UsbFacingDirection.FORWARD;  // robot2
         RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
-        imu = hardwareMap.get(IMU.class, "imu");
+        imu = hardwareMap.tryGet(IMU.class, "imu-robot1");
+        if( imu == null )
+           imu = hardwareMap.tryGet(IMU.class, "imu-robot2");
         imu.initialize(new IMU.Parameters(orientationOnRobot));
     } // initIMU
 

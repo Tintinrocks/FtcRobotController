@@ -60,8 +60,7 @@ public class TeleopPositionTest extends LinearOpMode {
         robot.turretServo.setPosition(turretPos);
 
         // Don't start up the shooter motor until user selects it for modification
-//      robot.shooterMotor1.setPower( shooterPower );
-//      robot.shooterMotor2.setPower( shooterPower );
+//      robot.shooterMotorsSetPower( shooterPower );
     
         spinPos = robot.SPIN_SERVO_P2;
         robot.spinServo.setPosition(spinPos);
@@ -153,8 +152,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         shooterPower -= 0.05;
                         if( shooterPower < 0.0 ) shooterPower = 0.0;
                         if( shooterPower > 1.0 ) shooterPower = 1.0;
-                        robot.shooterMotor1.setPower( shooterPower );
-                        robot.shooterMotor2.setPower( shooterPower );
+                        robot.shooterMotorsSetPower( shooterPower );
                         break;
                     case 2 :
                         turretPos -= 0.02;
@@ -206,8 +204,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         shooterPower += 0.05;
                         if( shooterPower < 0.0 ) shooterPower = 0.0;
                         if( shooterPower > 1.0 ) shooterPower = 1.0;
-                        robot.shooterMotor1.setPower( shooterPower );
-                        robot.shooterMotor2.setPower( shooterPower );
+                        robot.shooterMotorsSetPower( shooterPower );
                         break;
                     case 2 :
                         turretPos += 0.02;

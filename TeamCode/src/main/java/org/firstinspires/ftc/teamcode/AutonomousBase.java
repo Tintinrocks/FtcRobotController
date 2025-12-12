@@ -1143,63 +1143,156 @@ protected boolean driveToXY(double xTarget, double yTarget, double angleTarget, 
     } // AngleWrapDegrees
 
     /*--------------------------------------------------------------------------------------------*/
-    public void collectSpikemarkFromFar( int spikeMark, boolean isRed ) {
-        double x, y0,y1,y2,y3, ang;   // drive-to coordinates
-        // Define field location X value for selected spikemark (COMMON to both RED and BLUE)
-        switch( spikeMark ) {
-           case 1  : x = 25.5; break;
-           case 2  : x = 49.3; break;
-           case 3  : x = 73.0; break;
-           default : x = 25.5; break;
-        } // switch()
-        // Define Y locations and angle (MIRRORED for RED vs. BLUE)
-        y0  = (isRed)? -12.6 : +12.6;
-        y1  = (isRed)? -17.7 : +17.7;
-        y2  = (isRed)? -22.9 : +22.9;
-        y3  = (isRed)? -29.9 : +29.9;
-        ang = (isRed)? -90.0 : +90.0;
-        // Begin to execute the collection movements
+    public void collectSpikemark1FromFar( boolean isRed, double shooterPower ) {
+        double x1=16.0, x2=21.0, x3=24.0;
+        double xPos, yPos, angDeg;
+        // Transition from shooting zone to spike-mark zone (spikemark #1)
         if( opModeIsActive() ) {
-            if( spikeMark==1 ) {
-                // Drive away from wall
-                double currentY = robotGlobalYCoordinatePosition;
-                double currentAngle = Math.toDegrees(robotOrientationRadians);
-                driveToPosition(20.0, currentY, currentAngle, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_THRU);
-            } // move away from wall
-            // Drive to starting position to collect
-            driveToPosition( x,y0,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            // Turn on collector
-            robot.intakeMotor.setPower(0.90);
-            // Drive into the 1st ball to collect it
-            driveToPosition( x,y1,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            robot.spinServoSetPosition(SPIN_DECREMENT);
-//          robot.spinServoSetPositionCR(SPIN_DECREMENT);
+           // drive away from the far shooting zone in a curved path toward the 1st spike mark
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_40, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_60, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+        }
+        // Collect the 3 balls at that spike mark
+        if( opModeIsActive() ) {
+           // Turn on collector
+           robot.intakeMotor.setPower(0.90);
+           // start relative movements
+           xPos   = (isRed)? 25.5 : 25.5;
+           yPos   = (isRed)? -12.6 : +12.6;
+           angDeg = (isRed)? -90.0 : +90.0;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Drive into the 1st ball to collect it
+           yPos   = (isRed)? -17.7 : +17.7;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
             // Drive into the 2nd ball to collect it
-            driveToPosition( x,y2,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            // Spindex it
-            robot.spinServoSetPosition(SPIN_DECREMENT);
-//          robot.spinServoSetPositionCR(SPIN_DECREMENT);
-            // Drive into the 3rd ball to collect it
-            driveToPosition( x,y3,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
+           yPos   = (isRed)? -22.9 : +22.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Spindex it
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
+           // Drive into the 3rd ball to collect it
+           yPos   = (isRed)? -29.9 : +29.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
         } // opModeIsActive
-    } // collectSpikemarkFromFar
+        // Drive back to the shooting zone (back the way we came!)
+        if( opModeIsActive() ) {
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+           // Start up the shooter motor so it can be at speed when we reach the shooting zone
+           robot.shooterMotorsSetPower( shooterPower );
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+            // Swivel the turret toward the RED or BLUE goal (assumes field location of 11.0/0.0/0deg)
+            robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( 10.0, ((isRed)? 0.0:0.0),  ((isRed)?  0.0:0.0),   DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+        } // opModeIsActive
+    } // collectSpikemark1FromFar
 
     /*--------------------------------------------------------------------------------------------*/
-    // TODO: we can/should merge this with scorePreloadBallsFromFar()
-    public void scoreThreeBallsFromFar( int obeliskID, boolean isRed, double shooterPower ) {
+    public void collectSpikemark2FromFar( boolean isRed, double shooterPower ) {
+        double x1=38.0, x2=43.0, x3=47.0;
+        double xPos, yPos, angDeg;
+        // Transition from shooting zone to spike-mark zone (spikemark #1)
         if( opModeIsActive() ) {
-            // Drive to shooting location
-            if( isRed ) {
-              driveToPosition( 10.8, -0.4, -37.7, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            } else {
-              driveToPosition( 10.8, +0.4, +37.7, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            }
-            // Start to ramp up the shooter
-            robot.shooterMotor1.setPower( shooterPower );
-            robot.shooterMotor2.setPower( shooterPower );
-            // Swivel the turret toward the RED or BLUE goal (do this instead of parking at 142deg??)
-//          robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
-            sleep(2000); // Wait for flywheels to reach speed
+           // drive away from the far shooting zone in a curved path toward the 1st spike mark
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_40, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_60, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+        }
+        // Collect the 3 balls at that spike mark
+        if( opModeIsActive() ) {
+           // Turn on collector
+           robot.intakeMotor.setPower(0.90);
+           // start relative movements
+           xPos   = (isRed)? 49.3 : 49.3;
+           yPos   = (isRed)? -12.6 : +12.6;
+           angDeg = (isRed)? -90.0 : +90.0;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Drive into the 1st ball to collect it
+           yPos   = (isRed)? -17.7 : +17.7;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
+            // Drive into the 2nd ball to collect it
+           yPos   = (isRed)? -22.9 : +22.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Spindex it
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
+           // Drive into the 3rd ball to collect it
+           yPos   = (isRed)? -29.9 : +29.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+        } // opModeIsActive
+        // Drive back to the shooting zone (back the way we came!)
+        if( opModeIsActive() ) {
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+           // Start up the shooter motor so it can be at speed when we reach the shooting zone
+           robot.shooterMotorsSetPower( shooterPower );
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+            // Swivel the turret toward the RED or BLUE goal (assumes field location of 11.0/0.0/0deg)
+            robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( 10.0, ((isRed)? 0.0:0.0),  ((isRed)?  0.0:0.0),   DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+        } // opModeIsActive
+    } // collectSpikemark2FromFar
+
+    /*--------------------------------------------------------------------------------------------*/
+    public void collectSpikemark3FromFar( boolean isRed, double shooterPower ) {
+        double x1=62.0, x2=67.0, x3=71.0;
+        double xPos, yPos, angDeg;
+        // Transition from shooting zone to spike-mark zone (spikemark #1)
+        if( opModeIsActive() ) {
+           // drive away from the far shooting zone in a curved path toward the 1st spike mark
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_40, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_60, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+        }
+        // Collect the 3 balls at that spike mark
+        if( opModeIsActive() ) {
+           // Turn on collector
+           robot.intakeMotor.setPower(0.90);
+           // start relative movements
+           xPos   = (isRed)? 73.0 : 73.0;
+           yPos   = (isRed)? -12.6 : +12.6;
+           angDeg = (isRed)? -90.0 : +90.0;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Drive into the 1st ball to collect it
+           yPos   = (isRed)? -17.7 : +17.7;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
+            // Drive into the 2nd ball to collect it
+           yPos   = (isRed)? -22.9 : +22.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+           // Spindex it
+           robot.spinServoSetPosition(SPIN_DECREMENT);
+//         robot.spinServoSetPositionCR(SPIN_DECREMENT);
+           // Drive into the 3rd ball to collect it
+           yPos   = (isRed)? -29.9 : +29.9;
+           driveToPosition( xPos, yPos, angDeg, DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+        } // opModeIsActive
+        // Drive back to the shooting zone (back the way we came!)
+        if( opModeIsActive() ) {
+           driveToPosition( x3, ((isRed)? 7.0:-7.0), ((isRed)? 70.0:-70.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+           // Start up the shooter motor so it can be at speed when we reach the shooting zone
+           robot.shooterMotorsSetPower( shooterPower );
+           driveToPosition( x2, ((isRed)? 3.0:-3.0), ((isRed)? 45.0:-45.0), DRIVE_SPEED_70, TURN_SPEED_30, DRIVE_THRU);
+            // Swivel the turret toward the RED or BLUE goal (assumes field location of 11.0/0.0/0deg)
+            robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
+           driveToPosition( x1, ((isRed)? 1.0:-1.0), ((isRed)? 22.5:-22.5), DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_THRU);
+           driveToPosition( 10.0, ((isRed)? 0.0:0.0),  ((isRed)?  0.0:0.0),   DRIVE_SPEED_20, TURN_SPEED_30, DRIVE_TO);
+        } // opModeIsActive
+    } // collectSpikemark3FromFar
+
+    /*--------------------------------------------------------------------------------------------*/
+    /* Handles the shooting of 3 balls already collected.  Assumptions:                           */
+    /* - robot is already parked in far shooting zone                                             */
+    /* - turret is already rotated toward the goal                                                */
+    /* - shooter is already up to speed                                                           */
+    public void scoreThreeBallsFromFar( int obeliskID ) {
+        if( opModeIsActive() ) {
             // Convert the obelisk value into a shooting order
             HardwareSwyftBot.SpindexerState[] shootOrder = getObeliskShootOrder(obeliskID);
             // Shoot all 3 balls
@@ -1208,42 +1301,24 @@ protected boolean driveToXY(double xTarget, double yTarget, double angleTarget, 
                robot.spinServoSetPosition( shootOrder[i] );
 //             robot.spinServoSetPositionCR( shootOrder[i] );
                // wait for the rotation to complete, then launch that ball
-               sleep(2000 );
+               sleep(1500);
               launchBall();
               if( !opModeIsActive() ) break;
               }
         } // opModeIsActive
+        // Turn off shooter while we go collect more balls
+        robot.shooterMotorsSetPower( 0.0 );
     } // scoreThreeBallsFromFar
 
-    /*--------------------------------------------------------------------------------------------*/
-    public void scorePreloadBallsFromFar(int obeliskID, boolean isRed, double shooterPower ) {
-        if( opModeIsActive() ) {
-            // Start to ramp up the shooter
-            robot.shooterMotor1.setPower( shooterPower );
-            robot.shooterMotor2.setPower( shooterPower );
-            // Drive out away from wall, both to allow us to rotate the turret and not have the
-            // shooter drive belt touch the field wall, but also to be closer to the goal.
-            driveToPosition( 11.0, 0.0, 0.0, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-
-            // Swivel the turret toward the RED or BLUE goal
-            robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
-            // Turn on collector to help retain balls during spindexing
-            robot.intakeMotor.setPower(0.90);
-            sleep(3000 ); // Wait a bit longer for flywheels to reach speed
-            // Convert the obelisk value into a shooting order
-            HardwareSwyftBot.SpindexerState[] shootOrder = getObeliskShootOrder(obeliskID);
-            // Shoot all 3 preloaded balls
-            for(int i=0; i<shootOrder.length; i++) {
-                // rotate (if necessary) to the next position
-//              robot.spinServoSetPosition( shootOrder[i] );
-                robot.spinServoSetPositionCR( shootOrder[i] );
-                // wait for the rotation to complete, then launch that ball
-                sleep(2000 );
-                launchBall();
-                if( !opModeIsActive() ) break;
-            }
-        } // opModeIsActive
-    } // scorePreloadBalls
+    //--------------------------------------------------------------------------------------------
+    public void launchBall(){
+        robot.startInjectionStateMachine();
+        do {
+            sleep(50);
+            if( !opModeIsActive() ) break;
+            performEveryLoop();
+        } while (robot.liftServoBusyU || robot.liftServoBusyD);
+    } // launchBall
 
     //--------------------------------------------------------------------------------------------
     HardwareSwyftBot.SpindexerState[] getObeliskShootOrder(int obeliskID) {
@@ -1268,15 +1343,5 @@ protected boolean driveToXY(double xTarget, double yTarget, double angleTarget, 
                 return new HardwareSwyftBot.SpindexerState[0];
         }
     } // getObeliskShootOrder
-
-    //--------------------------------------------------------------------------------------------
-    public void launchBall(){
-        robot.startInjectionStateMachine();
-        do {
-            sleep(50);
-            if( !opModeIsActive() ) break;
-            performEveryLoop();
-        } while (robot.liftServoBusyU || robot.liftServoBusyD);
-    } // launchBall
 
 } // AutonomousBase

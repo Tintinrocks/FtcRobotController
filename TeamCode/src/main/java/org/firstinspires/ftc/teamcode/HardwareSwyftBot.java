@@ -218,10 +218,12 @@ public class HardwareSwyftBot
 
 //  public final static double LIFT_SERVO_INIT   = 0.490;  // ROBOT1
 //  public final static double LIFT_SERVO_RESET  = 0.490;
-    public final static double LIFT_SERVO_INIT   = 0.507;  // ROBOT2
-    public final static double LIFT_SERVO_RESET  = 0.507;
+    public final static double LIFT_SERVO_INIT   = 0.510;  // ROBOT2
+    public final static double LIFT_SERVO_RESET  = 0.510;
     public final static double LIFT_SERVO_INJECT = 0.310;
-
+    //   177 (182)  . . .    (236)  241           <-- 5deg tolerance on RESET and INJECT
+    public final static double LIFT_SERVO_RESET_ANG  = 182.0;  // 0.500 = 177.1deg
+    public final static double LIFT_SERVO_INJECT_ANG = 236.0;  // 0.310 = 241.7deg
     //====== MOTIF CONSTANTS =====
     public enum MotifOptions {
         MOTIF_GPP,  // GREEN, PURPLE, PURPLE
@@ -443,6 +445,14 @@ public class HardwareSwyftBot
 //      shooterMotor1Amps = shooterMotor1.getCurrent(MILLIAMPS);
 //      shooterMotor2Amps = shooterMotor1.getCurrent(MILLIAMPS);
     } // readBulkData
+
+    /*--------------------------------------------------------------------------------------------*/
+    public void shooterMotorsSetPower( double shooterPower )
+    {
+        // TODO: start a timer so we can measure  how long the ramp-up takes
+        shooterMotor1.setPower( shooterPower );
+        shooterMotor2.setPower( shooterPower );
+    } // shooterMotorsSetPower
 
     //BRODY!!
     static double thetaMaxTurret = 375;
@@ -727,10 +737,16 @@ public class HardwareSwyftBot
     /*--------------------------------------------------------------------------------------------*/
     public void processInjectionStateMachine()
     {
+        boolean servoFullyInjected, servoFullyReset, servoTimeoutU, servoTimeoutD;
         // Process the LIFTING case (AxonMax+ no-load 60deg rotation = 115 msec
         if( liftServoBusyU ) {
-            boolean servoFullyInjected = false;  // need Axon position feedback!!
-            boolean servoTimeoutU = (liftServoTimer.milliseconds() > 750);
+            // Are we "done" because the servo position is now close enough? (Axon position feedback)
+            if (isRobot1) {
+                servoFullyInjected = false;
+            } else { // robot2 has Axon position feedback wired up
+                servoFullyInjected = (getInjectorAngle() >= LIFT_SERVO_INJECT_ANG);
+            }
+            servoTimeoutU = (liftServoTimer.milliseconds() > 750);
             // Has the injector servo reached the desired position? (or timed-out?)
             if( servoFullyInjected || servoTimeoutU ) {
               liftServoBusyU = false;  // the UP phase is complete
@@ -743,8 +759,13 @@ public class HardwareSwyftBot
         
         // Process the RESETTING case (AxonMax+ no-load 60deg rotation = 115 msec
         if( liftServoBusyD ) {
-            boolean servoFullyReset = false;  // need Axon position feedback!!
-            boolean servoTimeoutD = (liftServoTimer.milliseconds() > 500);
+            // Are we "done" because the servo position is now close enough? (Axon position feedback)
+            if (isRobot1) {
+                servoFullyReset = false;
+            } else { // robot2 has Axon position feedback wired up
+                servoFullyReset = (getInjectorAngle() <= LIFT_SERVO_RESET_ANG);
+            }
+            servoTimeoutD = (liftServoTimer.milliseconds() > 500);
             // Has the injector servo reached the desired position? (or timed-out?)
             if( servoFullyReset || servoTimeoutD ) {
               liftServoBusyD = false;  // the DOWN phase is complete
@@ -761,26 +782,6 @@ public class HardwareSwyftBot
        liftServoTimer.reset();
        liftServoBusyD = true;        
     } // abortInjectionStateMachine
-
-    public void waitForInjector()
-    {
-       // Query this before attempting to rotate the spindexer, so we don't
-       // try to rotate while the injector is raised and blocking the rotation
-       for( int i=0; i<5; i++ ) {
-           if( !liftServoBusyU && !liftServoBusyD ) break;
-           // wait 100msec and try again
-           try {
-               sleep(100);
-           } catch (InterruptedException e) {
-               throw new RuntimeException(e);
-           }
-       }
-       // TODO:  we don't really have to wait until the injector servo is fully reset.
-       // The spindexer is safe to turn once the servo is below a given angle.  Once
-       // servo position feedback is hooked up, we can check the current angle and
-       // return as soon as it is below that safe angle.
-        
-    } // waitForInjector
 
     /*--------------------------------------------------------------------------------------------*/
     public void eyelidServoSetPosition( EyelidState position )

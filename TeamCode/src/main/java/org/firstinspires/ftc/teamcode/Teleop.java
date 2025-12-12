@@ -596,9 +596,10 @@ public abstract class Teleop extends LinearOpMode {
 
     /*---------------------------------------------------------------------------------*/
     void processSpindexer() {
+        boolean safeToSpindex = (robot.getInjectorAngle() <= robot.LIFT_SERVO_RESET_ANG);
+        if( !safeToSpindex ) return;
         // Rotate spindexer left one position?
         if( gamepad2_l_bumper_now && !gamepad2_l_bumper_last) {
-            robot.waitForInjector();
             if (robot.spinServoCurPos != SPIN_P1)
                 robot.spinServoSetPosition(SPIN_DECREMENT);
             else
@@ -607,7 +608,6 @@ public abstract class Teleop extends LinearOpMode {
         }
         // Rotate spindexer right one position?
         else if( gamepad2_r_bumper_now && !gamepad2_r_bumper_last) {
-            robot.waitForInjector();
             if( robot.spinServoCurPos != SPIN_P3 )
                 robot.spinServoSetPosition( SPIN_INCREMENT );
             else
@@ -644,12 +644,10 @@ public abstract class Teleop extends LinearOpMode {
         if( gamepad2_circle_now && !gamepad2_circle_last)
         {
             if (shooterMotorsOn == false){
-                robot.shooterMotor1.setPower( shooterPower );
-                robot.shooterMotor2.setPower( shooterPower );
+                robot.shooterMotorsSetPower( shooterPower );
                 shooterMotorsOn = true;
             } else {
-                robot.shooterMotor1.setPower( 0.0 );
-                robot.shooterMotor2.setPower( 0.0 );
+                robot.shooterMotorsSetPower( 0.0 );
                 shooterMotorsOn = false;
             }
         }

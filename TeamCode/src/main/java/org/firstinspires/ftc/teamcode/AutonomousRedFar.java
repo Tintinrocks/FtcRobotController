@@ -125,26 +125,36 @@ public class AutonomousRedFar extends AutonomousBase {
     /*   5 Score collected balls                                                                  */
     /*--------------------------------------------------------------------------------------------*/
     private void mainAutonomous( int obeliskID ) {
-
+        double shooterPowerFar = 0.55;
+        
         // Do we start with an initial delay?
         if( startDelaySec > 0 ) {
             sleep( startDelaySec * 1000 );
         }
 
-        // Score Preload Balls from the FAR zone
-        scorePreloadBallsFromFar( obeliskID, redAlliance, 0.55 );
-        
+        //===== Score Preload Balls (from the FAR zone) ==========
+        // Immediately start up shooter so it can be getting up to speed
+        robot.shooterMotorsSetPower( shooterPowerFar );
+        // Drive out away from wall, both to allow us to rotate the turret and not have the
+        // shooter drive belt touch the field wall, but also to be closer to the goal.
+        // Must not go so far we are no longer within the scoring zone!
+        driveToPosition( 11.0, 0.0, 0.0, DRIVE_SPEED_40, TURN_SPEED_15, DRIVE_TO);
+        // Swivel the turret toward the RED or BLUE goal (assumes field location of 11.0/0.0/0deg
+        robot.turretServo.setPosition( (redAlliance)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
+        sleep( 1500 ); // Must cover both shooter spin up and turret rotation
+        scoreThreeBallsFromFar( obeliskID );
+
         // Collect and Score 1st spike mark
-        collectSpikemarkFromFar( 1, redAlliance );
-        scoreThreeBallsFromFar( obeliskID, redAlliance, 0.55 );
+        collectSpikemark1FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
 
         // Collect and Score 2nd spike mark
-        collectSpikemarkFromFar( 2, redAlliance );
-        scoreThreeBallsFromFar( obeliskID, redAlliance, 0.55 );
+        collectSpikemark2FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
             
         // Collect and Score 3rd spike mark
-        collectSpikemarkFromFar( 3, redAlliance );
-        scoreThreeBallsFromFar( obeliskID, redAlliance, 0.55 );
+        collectSpikemark3FromFar( redAlliance,shooterPowerFar );
+        scoreThreeBallsFromFar( obeliskID );
 
         // Drive away from the score line for the MOVEMENT points
         driveToPosition(32.0, 0.0, 0.0, DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_TO);
