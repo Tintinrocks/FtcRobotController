@@ -109,12 +109,12 @@ public abstract class AutonomousBase extends LinearOpMode {
        GATE_AFTER9("After 9"); // Open the gate after scoring 9 balls
 
        private final String description;
-
+   
        // Private constructor - called for each enum constant above
        private GateOptions(String description) {
            this.description = description;
        }
-
+   
        // Description Getter
        public String getDescription() {
            return description;
@@ -241,9 +241,9 @@ public abstract class AutonomousBase extends LinearOpMode {
     /*--------------------------------------------------------------------------------------------*/
     // Resets odometry starting position and angle to zero accumulated encoder counts
     public void resetGlobalCoordinatePosition(){
-//      robot.odom.resetPosAndIMU();   // don't need a full recalibration, just reset for any movement
-        robot.odom.setOffsets(0.0, 0.0, DistanceUnit.MM);
-//      robot.odom.setHeading( 180.0, AngleUnit.DEGREES ); // start pointing backward!
+//      robot.odom.resetPosAndIMU();   // don't need full recalibration; just reset our position in case of any movement
+        Pose2D startPosAuto = new Pose2D(DistanceUnit.INCH, 0.0, 0.0, AngleUnit.DEGREES, 0.0);
+        robot.odom.setPosition(startPosAuto);
         robotGlobalXCoordinatePosition = 0.0;  // This will get overwritten the first time
         robotGlobalYCoordinatePosition = 0.0;  // we call robot.odom.update()!
         robotOrientationRadians        = 0.0;
@@ -258,7 +258,7 @@ public abstract class AutonomousBase extends LinearOpMode {
         robotGlobalYCoordinatePosition = pos.getY(DistanceUnit.INCH);
         robotOrientationRadians        = pos.getHeading(AngleUnit.RADIANS);
         robot.processInjectionStateMachine();
-        robot.processSpindexerControl();
+//      robot.processSpindexerControl();  // only for continuous rotation
     } // performEveryLoop
 
     public void processLimelightObelisk() {
@@ -688,7 +688,7 @@ public abstract class AutonomousBase extends LinearOpMode {
                                 double speedMax, double turnMax, int driveType) {
         // Loop until we get to destination.
         performEveryLoop();
-        while(!driveToXY(-yTarget, xTarget, angleTarget,
+        while(!driveToXY( xTarget, yTarget, angleTarget,
                 speedMax, driveType)
                 && opModeIsActive()) {
             performEveryLoop();
@@ -797,91 +797,106 @@ public abstract class AutonomousBase extends LinearOpMode {
         return reachedDestination;
     }
 
-    /**
-     * @param xTarget           - The X field coordinate to go to.
-     * @param yTarget           - The Y field coordinate to go to.
-     * @param angleTarget - The angle the robot should try to face when reaching destination in degrees.
-     * @param speedMin    - The minimum speed that allows movement.
-     * @param speedMax    - Sets the maximum speed to drive.
-     * @param errorMultiplier - Sets the proportional speed to slow down.
-     * @param errorAllowed - Sets the allowable error to claim target reached.
-     * @param driveType - Allows waypoint to be a drive through where the robot won't slow down.
-     * @return - Boolean true we have reached destination, false we have not
-     */
-    protected boolean driveToXY(double yTarget, double xTarget, double angleTarget, double speedMin,
-                                double speedMax, double errorMultiplier, double errorAllowed,
-                                int driveType) {
-        boolean reachedDestination = false;
-        double xWorld = robotGlobalXCoordinatePosition;  // inches
-        double yWorld = robotGlobalYCoordinatePosition;  // inches
-        double xMovement = 0.0, yMovement = 0.0, turnMovement = 0.0;
-        // Not sure why, but the x and y are backwards
-        double deltaX = xTarget - xWorld;
-        double deltaY = yTarget - yWorld;
-        double driveAngle = Math.atan2(deltaY, deltaX);
-        double deltaAngle = AngleWrapRadians(toRadians(angleTarget) - robotOrientationRadians);
-        double magnitude = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        double driveSpeed;
-        double turnSpeed = Math.toDegrees(deltaAngle) * errorMultiplier;
-        // Have to convert from world angles to robot centric angles.
-        double robotDriveAngle = driveAngle - robotOrientationRadians;
+/**
+ * Drives the robot to a field-centric (X, Y) position while facing a desired angle.
+ * 
+ * @param xTarget         - The X field coordinate to go to (forward is +X)
+ * @param yTarget         - The Y field coordinate to go to (left is +Y)
+ * @param angleTarget     - The angle [deg] robot should face at destination (CCW positive)
+ * @param speedMin        - Minimum speed that allows movement
+ * @param speedMax        - Maximum speed to drive
+ * @param errorMultiplier - Proportional gain for slowing down as we approach target
+ * @param errorAllowed    - Distance error (inches) considered "reached"
+ * @param driveType       - Use DRIVE_THRU for waypoints you want to pass through without stopping
+ * @return                - true when target is reached (within errorAllowed)
+ */
+protected boolean driveToXY(double xTarget, double yTarget, double angleTarget, double speedMin,
+                            double speedMax, double errorMultiplier, double errorAllowed,
+                            int driveType) {
+    boolean reachedDestination = false;
 
-        // This will allow us to do multi-point routes without huge slowdowns.
-        // Such use cases will be changing angles, or triggering activities at
-        // certain points.
-        if(!(driveType == DRIVE_THRU)) {
-            driveSpeed = magnitude * errorMultiplier;
-        } else {
-            driveSpeed = speedMax;
-        }
+    double xWorld = robotGlobalXCoordinatePosition;  // inches
+    double yWorld = robotGlobalYCoordinatePosition;  // inches
 
-        if(driveSpeed < speedMin) {
-            driveSpeed = speedMin;
-        } else if (driveSpeed > speedMax) {
-            driveSpeed = speedMax;
-        }
+    double deltaX = xTarget - xWorld;
+    double deltaY = yTarget - yWorld;
 
-        // Check if we passed through our point
-        if(magnitude <= errorAllowed) {
-            reachedDestination = true;
-            if(!(driveType == DRIVE_THRU)) {
-                robot.stopMotion();
-            } else {
-                // This can happen if the robot is already at error distance for drive through
-                xMovement = driveSpeed * Math.cos(robotDriveAngle);
-                yMovement = driveSpeed * Math.sin(robotDriveAngle);
-                turnMovement = turnSpeed;
-                ApplyMovement(yMovement, xMovement, turnMovement);
-            }
-        } else {
-            xMovement = driveSpeed * Math.cos(robotDriveAngle);
-            yMovement = driveSpeed * Math.sin(robotDriveAngle);
-            turnMovement = turnSpeed;
-            ApplyMovement(yMovement, xMovement, turnMovement);
-        }
+    // Angle from robot to target point in world frame (0deg = +X forward, 90deg = +Y left)
+    double driveAngle = Math.atan2(deltaY, deltaX);
 
-        boolean ODOMETRY_DEBUG = false;
-        if( ODOMETRY_DEBUG ) {
-            sleep(250);       // allow 0.25 seconds of progress (from prior loop)...
-            robot.driveTrainMotorsZero(); // then stop and observe
-            telemetry.addData("World X (inches)", "%.2f in", xWorld );
-            telemetry.addData("World Y (inches)", "%.2f in", yWorld );
-            telemetry.addData("Orientation (deg)","%.2f deg", Math.toDegrees(robotOrientationRadians) );
-            telemetry.addData("distanceToPoint", "%.2f in", magnitude);
-            telemetry.addData("angleToPoint", "%.4f deg", Math.toDegrees(driveAngle));
-            telemetry.addData("deltaAngleToPoint", "%.4f deg", Math.toDegrees(deltaAngle));
-            telemetry.addData("relative_x_to_point", "%.2f in", deltaX);
-            telemetry.addData("relative_y_to_point", "%.2f in", deltaY);
-            //telemetry.addData("robot_radian_err", "%.4f deg", Math.toDegrees(robot_radian_err));
-            telemetry.addData("movement_x_power", "%.2f", xMovement);
-            telemetry.addData("movement_y_power", "%.2f", yMovement);
-            telemetry.addData("rotation_power", "%.2f", turnMovement);
-            telemetry.update();
-            sleep(5000);  // so we can read the output above
-        } // ODOMETRY_DEBUG
+    // Desired robot orientation at target (converted to radians)
+    double deltaAngle = AngleWrapRadians(Math.toRadians(angleTarget) - robotOrientationRadians);
 
-        return reachedDestination;
+    double magnitude = Math.hypot(deltaX, deltaY);
+
+    // Proportional turning speed
+    double turnSpeed = Math.toDegrees(deltaAngle) * errorMultiplier;
+
+    // Convert world-space drive direction to robot-relative angle
+    double robotDriveAngle = AngleWrapRadians(driveAngle - robotOrientationRadians);
+
+    // === SPEED CALCULATION ===
+    double driveSpeed;
+    // This will allow us to do multi-point routes without huge slowdowns.
+    // Such use cases will be changing angles, or triggering activities at
+    // certain points.
+    if (driveType != DRIVE_THRU) {
+        driveSpeed = magnitude * errorMultiplier; // slow down as we get closer
+    } else {
+        driveSpeed = speedMax; // full speed for drive-through waypoints
     }
+
+    // Clamp driveSpeed between min and max
+    driveSpeed = Math.max(speedMin, Math.min(speedMax, driveSpeed));
+
+    double xMovement, yMovement, turnMovement;
+    // Check if we passed through our point
+
+    if (magnitude <= errorAllowed) {
+        reachedDestination = true;
+
+        if (driveType != DRIVE_THRU) {
+            robot.stopMotion();
+            return true;
+        } else {
+            // Already at point but it's a drive-through, so keep moving in the direction we were going
+            xMovement = driveSpeed * Math.cos(robotDriveAngle);
+            yMovement = driveSpeed * Math.sin(robotDriveAngle); // left strafe is positive Y
+            turnMovement = turnSpeed;
+        }
+    } else {
+        // Normal case: drive toward the point
+        xMovement = driveSpeed * Math.cos(robotDriveAngle);  // FWD/BACK +X = forward
+        yMovement = driveSpeed * Math.sin(robotDriveAngle);  // STRAFE:  +Y = left
+        turnMovement = turnSpeed;
+    }
+
+    ApplyMovement(yMovement, xMovement, turnMovement);
+
+    // Optional debug telemetry (keep or remove as needed)
+    boolean ODOMETRY_DEBUG = false;
+    if (ODOMETRY_DEBUG) {
+        sleep(250);                   // allow 0.25 seconds of progress (from prior loop)...
+        robot.driveTrainMotorsZero(); // then stop and observe
+        telemetry.addData("World X (inches)", "%.2f", xWorld);
+        telemetry.addData("World Y (inches)", "%.2f", yWorld);
+        telemetry.addData("Orientation (deg)", "%.2f", Math.toDegrees(robotOrientationRadians));
+        telemetry.addData("Distance to target", "%.2f in", magnitude);
+        telemetry.addData("Drive angle (world)", "%.4f deg", Math.toDegrees(driveAngle));
+        telemetry.addData("deltaAngleToPoint", "%.4f deg", Math.toDegrees(deltaAngle));
+        telemetry.addData("relative_x_to_point", "%.2f in", deltaX);
+        telemetry.addData("relative_y_to_point", "%.2f in", deltaY);
+        //telemetry.addData("robot_radian_err", "%.4f deg", Math.toDegrees(robot_radian_err));
+        telemetry.addData("movement_x_power", "%.3f", xMovement);
+        telemetry.addData("movement_y_power", "%.3f", yMovement);
+        telemetry.addData("rotation_power", "%.3f", turnMovement);
+        telemetry.update();
+        sleep(5000);   // so we can read the output above
+    } // ODOMETRY_DEBUG
+
+    return reachedDestination;
+}
+
     /**
      * @param yTarget     - The Y field coordinate to go to.
      * @param xTarget     - The X field coordinate to go to.
@@ -890,7 +905,7 @@ public abstract class AutonomousBase extends LinearOpMode {
      * @param driveType   - Slows the robot down to stop at destination coordinate.
      * @return - Boolean true we have reached destination, false we have not
      */
-    protected boolean driveToXY(double yTarget, double xTarget, double angleTarget,
+    protected boolean driveToXY(double xTarget, double yTarget, double angleTarget,
                                 double speedMax, int driveType) {
 
         // Convert from cm to inches
@@ -898,7 +913,7 @@ public abstract class AutonomousBase extends LinearOpMode {
         double speedMin = MIN_DRIVE_MAGNITUDE;
         double allowedError = (driveType == DRIVE_THRU) ? 2.50 : 0.5;
 
-        return (driveToXY(yTarget, xTarget, angleTarget, speedMin, speedMax, errorMultiplier,
+        return (driveToXY(xTarget, yTarget, angleTarget, speedMin, speedMax, errorMultiplier,
                 allowedError, driveType));
     }
 
@@ -913,15 +928,10 @@ public abstract class AutonomousBase extends LinearOpMode {
         }
         lastUpdateTime = currTime;
 
-        // 2.1 is the ratio between the minimum power to strafe, 0.19, and driving, 0.09.
-//        double frontLeft = movement_y-movement_turn+movement_x*1.5;
-//        double backLeft = movement_y-movement_turn-movement_x*1.5;
-//        double backRight = movement_y+movement_turn+movement_x*1.5;
-//        double frontRight = movement_y+movement_turn-movement_x*1.5;
-        double frontRight = yMovement - xMovement + turnMovement;
-        double frontLeft  = yMovement + xMovement - turnMovement;
-        double backRight  = yMovement + xMovement + turnMovement;
-        double backLeft   = yMovement - xMovement - turnMovement;
+        double frontRight = xMovement + yMovement + turnMovement;
+        double frontLeft  = xMovement - yMovement - turnMovement;
+        double backRight  = xMovement - yMovement + turnMovement;
+        double backLeft   = xMovement + yMovement - turnMovement;
 
         //find the maximum of the powers
         double maxRawPower = Math.abs(frontLeft);
@@ -1107,7 +1117,7 @@ public abstract class AutonomousBase extends LinearOpMode {
      * @param angleRadians
      * @return
      */
-    public double AngleWrapRadians( double angleRadians ){
+    public double AngleWrapRadians( double angleRadians ) {
         while( angleRadians < -Math.PI ) {
             angleRadians += 2.0*Math.PI;
         }
@@ -1150,26 +1160,25 @@ public abstract class AutonomousBase extends LinearOpMode {
         ang = (isRed)? -90.0 : +90.0;
         // Begin to execute the collection movements
         if( opModeIsActive() ) {
-            // Drive to starting position
+            if( spikeMark==1 ) {
+                // Drive away from wall
+                double currentY = robotGlobalYCoordinatePosition;
+                double currentAngle = Math.toDegrees(robotOrientationRadians);
+                driveToPosition(20.0, currentY, currentAngle, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_THRU);
+            } // move away from wall
+            // Drive to starting position to collect
             driveToPosition( x,y0,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
             // Turn on collector
             robot.intakeMotor.setPower(0.90);
             // Drive into the 1st ball to collect it
             driveToPosition( x,y1,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
-            // Spindex it
-            if( robot.isRobot2 ) {
-              robot.spinServoSetPositionCR(SPIN_DECREMENT);
-            } else {
-              robot.spinServoSetPosition(SPIN_DECREMENT);
-            }
+            robot.spinServoSetPosition(SPIN_DECREMENT);
+//          robot.spinServoSetPositionCR(SPIN_DECREMENT);
             // Drive into the 2nd ball to collect it
             driveToPosition( x,y2,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
             // Spindex it
-            if( robot.isRobot2 ) {
-              robot.spinServoSetPositionCR(SPIN_DECREMENT);
-            } else {
-                robot.spinServoSetPosition(SPIN_DECREMENT);
-            }
+            robot.spinServoSetPosition(SPIN_DECREMENT);
+//          robot.spinServoSetPositionCR(SPIN_DECREMENT);
             // Drive into the 3rd ball to collect it
             driveToPosition( x,y3,ang, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
         } // opModeIsActive
@@ -1181,9 +1190,9 @@ public abstract class AutonomousBase extends LinearOpMode {
         if( opModeIsActive() ) {
             // Drive to shooting location
             if( isRed ) {
-              driveToPosition( 10.8, -0.4, -142.3, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
+              driveToPosition( 10.8, -0.4, -37.7, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
             } else {
-              driveToPosition( 10.8, +0.4, +142.3, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
+              driveToPosition( 10.8, +0.4, +37.7, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
             }
             // Start to ramp up the shooter
             robot.shooterMotor1.setPower( shooterPower );
@@ -1196,11 +1205,8 @@ public abstract class AutonomousBase extends LinearOpMode {
             // Shoot all 3 balls
             for(int i=0; i<shootOrder.length; i++) {
                 // rotate (if necessary) to the next position
-               if( robot.isRobot2 ) {
-                 robot.spinServoSetPositionCR( shootOrder[i] );
-               } else {
-                 robot.spinServoSetPosition( shootOrder[i] );
-               }
+               robot.spinServoSetPosition( shootOrder[i] );
+//             robot.spinServoSetPositionCR( shootOrder[i] );
                // wait for the rotation to complete, then launch that ball
                sleep(2000 );
               launchBall();
@@ -1215,19 +1221,22 @@ public abstract class AutonomousBase extends LinearOpMode {
             // Start to ramp up the shooter
             robot.shooterMotor1.setPower( shooterPower );
             robot.shooterMotor2.setPower( shooterPower );
-            // Back up 12" (assumes robot starts facing the wall, not the obelisk)
-            driveToPosition(-12.0, 0.0, 0.0, DRIVE_SPEED_10, TURN_SPEED_15, DRIVE_TO);
+            // Drive out away from wall, both to allow us to rotate the turret and not have the
+            // shooter drive belt touch the field wall, but also to be closer to the goal.
+            driveToPosition( 11.0, 0.0, 0.0, DRIVE_SPEED_20, TURN_SPEED_15, DRIVE_TO);
+
             // Swivel the turret toward the RED or BLUE goal
             robot.turretServo.setPosition( (isRed)? 0.55 : 0.43 ); // right toward RED or left toward BLUE
             // Turn on collector to help retain balls during spindexing
             robot.intakeMotor.setPower(0.90);
-            sleep(4000 ); // Wait a bit longer for flywheels to reach speed
+            sleep(3000 ); // Wait a bit longer for flywheels to reach speed
             // Convert the obelisk value into a shooting order
             HardwareSwyftBot.SpindexerState[] shootOrder = getObeliskShootOrder(obeliskID);
             // Shoot all 3 preloaded balls
             for(int i=0; i<shootOrder.length; i++) {
                 // rotate (if necessary) to the next position
-                robot.spinServoSetPosition( shootOrder[i] );
+//              robot.spinServoSetPosition( shootOrder[i] );
+                robot.spinServoSetPositionCR( shootOrder[i] );
                 // wait for the rotation to complete, then launch that ball
                 sleep(2000 );
                 launchBall();

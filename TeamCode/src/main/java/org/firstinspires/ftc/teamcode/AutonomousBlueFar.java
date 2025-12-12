@@ -22,9 +22,6 @@ public class AutonomousBlueFar extends AutonomousBase {
 
     double pos_y=robotGlobalYCoordinatePosition, pos_x=robotGlobalXCoordinatePosition, pos_angle=robotOrientationRadians;  // Allows us to specify movement ABSOLUTELY
 
-    private Limelight3A limelight;
-    private int         obeliskID=23; // if we can't see it, default to PPG (purple purple green)
-
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -43,22 +40,8 @@ public class AutonomousBlueFar extends AutonomousBase {
         while (!isStarted()) {
             // Do we need to change any of the other autonomous options?
             processAutonomousInitMenu(false);  // not auto5 start position
-            LLResult result = limelight.getLatestResult();
-            if (result.isValid()) {
-                // Access fiducial results
-                List<LLResultTypes.FiducialResult> fiducialResults = result.getFiducialResults();
-                for (LLResultTypes.FiducialResult fr : fiducialResults) {
-                    int limelightID = fr.getFiducialId();
-                    // Note: common OBELISK april tags for both RED & BLUE alliance
-                    //  21 = GPP (green purple purple)
-                    //  22 = PGP (purple green purple)
-                    //  23 = PPG (purple purple green)
-                    if( (limelightID >= 21) && (limelightID <= 23) ) {
-                        telemetry.addData("Obelisk", "ID: %d", limelightID);
-                        obeliskID = limelightID;
-                    }
-                } // fiducialResults
-            } // isValid
+            // Process limelight for obelisk detection
+            processLimelightObelisk();
             // Pause briefly before looping
             idle();
         } // !isStarted
@@ -72,9 +55,12 @@ public class AutonomousBlueFar extends AutonomousBase {
 
         //---------------------------------------------------------------------------------
         // AUTONOMOUS ROUTINE:  The following method is our main autonomous.
-        // Assume turret position, flapper, and flywheel motor power is in position
+//      unitTestOdometryDrive();
         mainAutonomous( obeliskID );
         //---------------------------------------------------------------------------------
+
+        // Ensure spindexer servo stops in case we exit while the spindexer is rotating
+        robot.spinServoCR.setPower(0.0);
 
         telemetry.addData("Program", "Complete");
         telemetry.update();

@@ -2,6 +2,8 @@
 */
 package org.firstinspires.ftc.teamcode;
 
+import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.EyelidState.EYELID_CLOSED_BOTH;
+import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.EyelidState.EYELID_OPEN_BOTH;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_DECREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_INCREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P1;
@@ -107,14 +109,14 @@ public abstract class Teleop extends LinearOpMode {
 
         // Wait for the game to start (driver presses PLAY)
         while (!isStarted()) {
-            //  Send our spindexer continuous rotation servo to the starting point
-            robot.processSpindexerControl();
+            // Bulk-refresh the hub data and updates our state machines (spindexer!)
+            performEveryLoopTeleop();
             // Check for operator input that changes Autonomous options
             captureGamepad1Buttons();
             // Normally autonomous resets encoders.  Do we need to for teleop??
             if( gamepad1_cross_now && !gamepad1_cross_last) {
                 robot.resetEncoders();
-                robot.resetGlobalCoordinatePosition();
+                robot.resetGlobalCoordinatePosition(); // BRODY!!
             }
             // Pause briefly before looping
             idle();
@@ -130,8 +132,8 @@ public abstract class Teleop extends LinearOpMode {
             captureGamepad1Buttons();
             captureGamepad2Buttons();
 
-            // Bulk-refresh the Control/Expansion Hub device status (motor status, digital I/O) -- FASTER!
-            robot.readBulkData();
+            // Bulk-refresh the hub data and updates our state machines
+            performEveryLoopTeleop();
 
             // Request an update from the Pinpoint odometry computer (single I2C read)
             if( enableOdometry ) {
@@ -181,7 +183,7 @@ public abstract class Teleop extends LinearOpMode {
                 }
             }
 
-//          telemetry.addData("triangle","Single Wheel Control");
+            //BRODY!!
             if (gamepad1_l_bumper_now && !gamepad1_l_bumper_last) {
                 robot.turretServo.setPosition(robot.computeAlignedTurretPos());
             }
@@ -189,9 +191,9 @@ public abstract class Teleop extends LinearOpMode {
             if (gamepad1_r_bumper_now && !gamepad1_r_bumper_last) {
                 robot.shooterServo.setPosition(robot.computeAlignedFlapperPos());
             }
+            //BRODY!!
 
             telemetry.addData("cross","Toggle Intake");
-            telemetry.addData("triangle","Single Wheel Control");
             telemetry.addData("circle","Robot-centric (fwd/back modes)");
             telemetry.addData("square","Driver-centric (set joystick!)");
             telemetry.addData("d-pad","Fine control 15%)");
@@ -228,7 +230,6 @@ public abstract class Teleop extends LinearOpMode {
             processShooterFlap();
             processShooter();
             processInjector();
-            performEveryLoopTeleop();
 
             // Compute current cycle time
             nanoTimePrev = nanoTimeCurr;
@@ -241,34 +242,41 @@ public abstract class Teleop extends LinearOpMode {
             telemetry.addData("Shooter RPM", "%.1f %.1f", robot.shooterMotor1Vel, robot.shooterMotor2Vel );
 //          telemetry.addData("Shooter mA", "%.1f %.1f", robot.shooterMotor1Amps, robot.shooterMotor2Amps );
 //          telemetry.addData("Angles", "IMU %.2f, Pinpoint %.2f deg)", robot.headingIMU(), curAngle );
-            telemetry.addData("Spindexer Angle", "%.1f deg (%.2f)",
-                    robot.getSpindexerAngle(), robot.spindexerPowerSetting );
+            telemetry.addData("Spindexer Angle", "%.1f deg (%.2f)", robot.getSpindexerAngle(), robot.spindexerPowerSetting );
             telemetry.addLine( (robot.isRobot2)? "Robot2" : "Robot1");
             telemetry.addData("CycleTime", "%.1f msec (%.1f Hz)", cycleTimeElapsed, cycleTimeHz);
-            telemetry.addData("TurretAngle", robot.computeTurretAngle());
-            telemetry.addData("FlapperAngle", robot.computeLaunchAngle());
-            telemetry.addData("Turret Position", robot.computeAlignedTurretPos());
-            telemetry.addData("Flapper Position", robot.computeAlignedFlapperPos());
-            telemetry.addData("Robot Global X", robot.robotGlobalXCoordinatePosition);
-            telemetry.addData("Robot Global Y", robot.robotGlobalYCoordinatePosition);
-            telemetry.addData("Robot Global Orientation", robot.robotOrientationDegrees);
-            telemetry.addData("Robot Global Orientation Pinpoint", robot.odom.getPosition().getHeading(AngleUnit.DEGREES));
+            if( false ) {
+              // BRODY!!
+              telemetry.addData("TurretAngle", robot.computeTurretAngle());
+              telemetry.addData("FlapperAngle", robot.computeLaunchAngle());
+              telemetry.addData("Turret Position", robot.computeAlignedTurretPos());
+              telemetry.addData("Flapper Position", robot.computeAlignedFlapperPos());
+              telemetry.addData("Robot Global X", robot.robotGlobalXCoordinatePosition);
+              telemetry.addData("Robot Global Y", robot.robotGlobalYCoordinatePosition);
+              telemetry.addData("Robot Global Orientation", robot.robotOrientationDegrees);
+              telemetry.addData("Robot Global Orientation Pinpoint", robot.odom.getPosition().getHeading(AngleUnit.DEGREES));
+              //BRODY!!
+            }
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
 //          robot.waitForTick(40);
         } // opModeIsActive
 
+//  robot.spinServoCR.setPower(0.0);  // only for spinServoCR (not currently used)
     } // runOpMode
 
     /*---------------------------------------------------------------------------------*/
     void performEveryLoopTeleop() {
-        robot.odom.update();   // 6.9 msec for odom.update + odom.getPosition (14 msec total)
+        robot.readBulkData();
+        robot.processInjectionStateMachine();
+ //     robot.processSpindexerControl();  // only for spinServoCR (not currently used)
+        //BRODY!!
         Pose2D pos = robot.odom.getPosition();  // x,y pos in inch; heading in degrees
         robot.robotGlobalXCoordinatePosition = pos.getX(DistanceUnit.INCH);
         robot.robotGlobalYCoordinatePosition = pos.getY(DistanceUnit.INCH);
         robot.robotOrientationDegrees        = pos.getHeading(AngleUnit.DEGREES);
-        robot.processInjectionStateMachine();
+        //BRODY!!
     } // performEveryLoopTeleop
 
     /*---------------------------------------------------------------------------------*/
@@ -306,7 +314,7 @@ public abstract class Teleop extends LinearOpMode {
     /*  TELE-OP: Mecanum-wheel drive control using Dpad (slow/fine-adjustment mode)    */
     /*---------------------------------------------------------------------------------*/
     boolean processDpadDriveMode() {
-        double fineControlSpeed = 0.40;
+        double fineControlSpeed = 0.15;
         boolean dPadMode = true;
         // Only process 1 Dpad button at a time
         if( gamepad1.dpad_up ) {
@@ -550,10 +558,16 @@ public abstract class Teleop extends LinearOpMode {
         if( gamepad2_cross_now && !gamepad2_cross_last)
         {
             if (intakeMotorOnFwd == false){
+                // Command both eyelid open if we're collecting
+                robot.eyelidServoSetPosition( EYELID_OPEN_BOTH );
+                // Turn on collector in FORWARD
                 robot.intakeMotor.setPower(0.90);
                 intakeMotorOnFwd = true;
                 intakeMotorOnRev = false;
             } else{
+                // Command both eyelid CLOSED whenever we stop collecting
+                robot.eyelidServoSetPosition( EYELID_CLOSED_BOTH );
+                // Shut OFF collector
                 robot.intakeMotor.setPower(0.00);
                 intakeMotorOnFwd = false;
                 intakeMotorOnRev = false;
@@ -563,10 +577,16 @@ public abstract class Teleop extends LinearOpMode {
         if( gamepad2_square_now && !gamepad2_square_last)
         {
             if (intakeMotorOnRev == false){
+                // Command both eyelid open if we're anti-collecting
+                robot.eyelidServoSetPosition( EYELID_OPEN_BOTH );
+                // Turn on collector in REVERSE
                 robot.intakeMotor.setPower(-0.90);
                 intakeMotorOnFwd = false;
                 intakeMotorOnRev = true;
             } else{
+                // Command both eyelid CLOSED whenever we stop collecting
+                robot.eyelidServoSetPosition( EYELID_CLOSED_BOTH );
+                // Shut OFF collector
                 robot.intakeMotor.setPower(0.00);
                 intakeMotorOnFwd = false;
                 intakeMotorOnRev = false;
@@ -576,20 +596,24 @@ public abstract class Teleop extends LinearOpMode {
 
     /*---------------------------------------------------------------------------------*/
     void processSpindexer() {
-        // Rotate spindexer left or right one position
+        // Rotate spindexer left one position?
         if( gamepad2_l_bumper_now && !gamepad2_l_bumper_last) {
             robot.waitForInjector();
-            if( robot.spinServoCurPos != SPIN_P1 )
-                robot.spinServoSetPosition( SPIN_DECREMENT );
+            if (robot.spinServoCurPos != SPIN_P1)
+                robot.spinServoSetPosition(SPIN_DECREMENT);
             else
-                gamepad2.runRumbleEffect(spindexerRumbleL);            
-        } else if( gamepad2_r_bumper_now && !gamepad2_r_bumper_last) {
+                gamepad2.runRumbleEffect(spindexerRumbleL);
+//          robot.spinServoSetPositionCR(SPIN_DECREMENT);  // only for spinServoCR
+        }
+        // Rotate spindexer right one position?
+        else if( gamepad2_r_bumper_now && !gamepad2_r_bumper_last) {
             robot.waitForInjector();
             if( robot.spinServoCurPos != SPIN_P3 )
                 robot.spinServoSetPosition( SPIN_INCREMENT );
             else
                 gamepad2.runRumbleEffect(spindexerRumbleR);
-        } 
+//          robot.spinServoSetPositionCR(SPIN_INCREMENT);   // only for spinServoCR
+        } // bumper
     } // processSpindexer
 
     /*---------------------------------------------------------------------------------*/

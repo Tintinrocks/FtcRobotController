@@ -1,4 +1,4 @@
-/* FTC Team 7572 - Version 1.0 (10/13/2025) */
+/* FTC Team 7572 - Version 1.1 (12/11/2025) */
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -25,9 +25,16 @@ public class TeleopPositionTest extends LinearOpMode {
     boolean gamepad1_l_trigger_last,  gamepad1_l_trigger_now  = false;
     boolean gamepad1_r_trigger_last,  gamepad1_r_trigger_now  = false;
 
-    int     selectedMechanism = 0;  // 0=shooter servo; 1=shooter motor, 2=turret servo(s), 3=spin servo; 4=left/inject servo
+    // 0=shooter servo
+    // 1=shooter motor
+    // 2=turret servo(s)
+    // 3=spin servo
+    // 4=lift/injecter servo
+    // 5=lEyelidServo
+    // 6=rEyelidServo 
+    int     selectedMechanism = 0;  
     double  servoStepSize = 0.01;
-    double  shooterPos, turretPos, spinPos, liftPos;
+    double  shooterPos, turretPos, spinPos, liftPos, lEyelidPos, rEyelidPos;
     double  shooterPower = 0.50;
 
     long    nanoTimeCurr=0, nanoTimePrev=0;
@@ -57,12 +64,16 @@ public class TeleopPositionTest extends LinearOpMode {
 //      robot.shooterMotor2.setPower( shooterPower );
     
         spinPos = robot.SPIN_SERVO_P2;
-        if( robot.isRobot1 ) {
-            robot.spinServo.setPosition(spinPos);
-        }
+        robot.spinServo.setPosition(spinPos);
 
         liftPos = robot.LIFT_SERVO_INIT;
         robot.liftServo.setPosition(liftPos);
+        
+        lEyelidPos = robot.L_EYELID_SERVO_INIT;
+        robot.lEyelidServo.setPosition(lEyelidPos);
+        
+        rEyelidPos = robot.R_EYELID_SERVO_INIT;
+        robot.rEyelidServo.setPosition(rEyelidPos);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("State", "Ready");
@@ -100,15 +111,21 @@ public class TeleopPositionTest extends LinearOpMode {
                     break;
                 case 3 :
                     telemetry.addData("SELECTED:", "spinServo" );
-                    if( robot.isRobot1 ) {
-                        telemetry.addData("Spindexer Servo Command", "%.3f", robot.spinServo.getPosition() );
-                        telemetry.addData("Spindexer Servo Feedback", "%.3f deg", robot.getSpindexerAngle() );
-                    }
+                    telemetry.addData("Spindexer Servo Command", "%.3f", robot.spinServo.getPosition() );
+                    telemetry.addData("Spindexer Servo Feedback", "%.3f deg", robot.getSpindexerAngle() );
                     break;
                 case 4 :
                     telemetry.addData("SELECTED:", "liftServo" );
                     telemetry.addData("Injector Servo Command", "%.3f", robot.liftServo.getPosition() );
                     telemetry.addData("Injector Servo Feedback", "%.3f deg", robot.getInjectorAngle() );                                      
+                    break;
+                case 5 :
+                    telemetry.addData("SELECTED:", "lEyelidServo" );
+                    telemetry.addData("Left Eyelid Position", "%.3f", robot.lEyelidServo.getPosition() );
+                    break;
+                case 6 :
+                    telemetry.addData("SELECTED:", "rEyelidServo" );
+                    telemetry.addData("Right Eyelid Position", "%.3f", robot.rEyelidServo.getPosition() );
                     break;
                 default :
                     selectedMechanism = 0;
@@ -119,7 +136,7 @@ public class TeleopPositionTest extends LinearOpMode {
             if( gamepad1_cross_now && !gamepad1_cross_last)
             {
                 selectedMechanism += 1;
-                if( selectedMechanism > 4 ) selectedMechanism = 0;
+                if( selectedMechanism > 6 ) selectedMechanism = 0;
             } // cross
 
             //================ LEFT BUMPER DECREASES SERVO POSITION ================
@@ -150,13 +167,25 @@ public class TeleopPositionTest extends LinearOpMode {
                         spinPos -= servoStepSize;
                         if( spinPos < 0.0 ) spinPos = 0.0;
                         if( spinPos > 1.0 ) spinPos = 1.0;
-                        if( robot.isRobot1) robot.spinServo.setPosition(spinPos);
+                        robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
                         liftPos -= servoStepSize;
                         if( liftPos < 0.0 ) liftPos = 0.0;
                         if( liftPos > 1.0 ) liftPos = 1.0;
                         robot.liftServo.setPosition(liftPos);
+                        break;
+                    case 5 :
+                        lEyelidPos -= servoStepSize;
+                        if( lEyelidPos < 0.0 ) lEyelidPos = 0.0;
+                        if( lEyelidPos > 1.0 ) lEyelidPos = 1.0;
+                        robot.lEyelidServo.setPosition(lEyelidPos);
+                        break;
+                    case 6 :
+                        rEyelidPos -= servoStepSize;
+                        if( rEyelidPos < 0.0 ) rEyelidPos = 0.0;
+                        if( rEyelidPos > 1.0 ) rEyelidPos = 1.0;
+                        robot.rEyelidServo.setPosition(rEyelidPos);
                         break;
                     default :
                         break;
@@ -190,13 +219,25 @@ public class TeleopPositionTest extends LinearOpMode {
                         spinPos += servoStepSize;
                         if( spinPos < 0.0 ) spinPos = 0.0;
                         if( spinPos > 1.0 ) spinPos = 1.0;
-                        if( robot.isRobot1) robot.spinServo.setPosition(spinPos);
+                        robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
                         liftPos += servoStepSize;
                         if( liftPos < 0.0 ) liftPos = 0.0;
                         if( liftPos > 1.0 ) liftPos = 1.0;
                         robot.liftServo.setPosition(liftPos);
+                        break;
+                    case 5 :
+                        lEyelidPos += servoStepSize;
+                        if( lEyelidPos < 0.0 ) lEyelidPos = 0.0;
+                        if( lEyelidPos > 1.0 ) lEyelidPos = 1.0;
+                        robot.lEyelidServo.setPosition(lEyelidPos);
+                        break;
+                    case 6 :
+                        rEyelidPos += servoStepSize;
+                        if( rEyelidPos < 0.0 ) rEyelidPos = 0.0;
+                        if( rEyelidPos > 1.0 ) rEyelidPos = 1.0;
+                        robot.rEyelidServo.setPosition(rEyelidPos);
                         break;
                     default :
                         break;

@@ -92,20 +92,22 @@ public class AutonomousRedFar extends AutonomousBase {
         telemetry.addData("Drive Time", "%.3f sec", driveTime);
         telemetry.update();
         sleep(3000);
+
         telemetry.addData("Target", "x=24.0, y=24.0f, 0.00 deg (50%)");
-        // reset our timer and drive forward 20"
+        // reset our timer and drive left 24"
         autonomousTimer.reset();
-        driveToPosition(24.0, 240, 0.0, DRIVE_SPEED_50, TURN_SPEED_40, DRIVE_TO);
+        driveToPosition(24.0, 24.0, 0.0, DRIVE_SPEED_50, TURN_SPEED_40, DRIVE_TO);
         driveTime = autonomousTimer.milliseconds() / 1000.0;
         performEveryLoop();  // ensure our odometry is updated
         telemetry.addData("Odometry", "x=%.2f, y=%.2f, %.2f deg", robotGlobalXCoordinatePosition, robotGlobalYCoordinatePosition, Math.toDegrees(robotOrientationRadians));
         telemetry.addData("Drive Time", "%.3f sec", driveTime);
         telemetry.update();
         sleep(3000);
+
         telemetry.addData("Target", "x=24.0, y=24.0f, 90 deg (50%)");
         // reset our timer and drive forward 20"
         autonomousTimer.reset();
-        driveToPosition(24.0, 240, 90.0, DRIVE_SPEED_50, TURN_SPEED_50, DRIVE_TO);
+        driveToPosition(24.0, 24.0, 90.0, DRIVE_SPEED_50, TURN_SPEED_50, DRIVE_TO);
         driveTime = autonomousTimer.milliseconds() / 1000.0;
         performEveryLoop();  // ensure our odometry is updated
         telemetry.addData("Odometry", "x=%.2f, y=%.2f, %.2f deg", robotGlobalXCoordinatePosition, robotGlobalYCoordinatePosition, Math.toDegrees(robotOrientationRadians));
