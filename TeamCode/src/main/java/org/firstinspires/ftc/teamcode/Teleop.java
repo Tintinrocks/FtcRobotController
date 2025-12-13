@@ -7,7 +7,10 @@ import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.tel
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_DECREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_INCREMENT;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P1;
+import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P2;
 import static org.firstinspires.ftc.teamcode.HardwareSwyftBot.SpindexerState.SPIN_P3;
+
+import android.media.audiofx.DynamicsProcessing;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -16,6 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.teamcode.LimeLight;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +88,7 @@ public abstract class Teleop extends LinearOpMode {
     /* Declare OpMode members. */
     HardwareSwyftBot robot = new HardwareSwyftBot();
     AprilTagVision aprilTagVision;
+    LimeLight camera = new LimeLight();
     // sets unique behavior based on alliance
     public abstract void setAllianceSpecificBehavior();
 
@@ -254,57 +259,98 @@ public abstract class Teleop extends LinearOpMode {
             telemetry.addData("Status", "Vision initialized. Ready to start.");
             telemetry.update();
 
-            // 3. Wait for the driver to press the START button
-            waitForStart();
+            // 3. Wait for the driver to press the collecting schematic
+            if( gamepad2_cross_now && !gamepad2_cross_last) {
 
-            int id = 0;
-            List<String> colorSet = new ArrayList<>();
-            // 4. Main loop that runs after START is pressed
-            while (opModeIsActive()) {
-                Optional<AprilTagDetection> closestTag = aprilTagVision.getClosestDetection();
-                if (closestTag.isPresent()) {
-                    telemetry.addData("Closest Tag", "ID: %d", id = closestTag.get().id);
-                } else {
-                    telemetry.addData("Closest Tag", "None detected");
+                int id = 0;
+                List<LimeLight.DetectedColor> colorSet = new ArrayList<>();
+                // 4. Main loop that runs after START is pressed
+                while (opModeIsActive()) {
+                    Optional<AprilTagDetection> closestTag = aprilTagVision.getClosestDetection();
+                    if (closestTag.isPresent()) {
+                        telemetry.addData("Closest Tag", "ID: %d", id = closestTag.get().id);
+                    } else {
+                        telemetry.addData("Closest Tag", "None detected");
+                    }
+
+                    // Update the telemetry on the Driver Station screen
+                    telemetry.update();
+
+                    // Give the processor a brief pause to prevent flooding the logs
+                    Thread.sleep(20);
                 }
 
-                // Update the telemetry on the Driver Station screen
-                telemetry.update();
+                // 5. Clean up when the OpMode is finished
+                // This is important to release camera resources.
+                aprilTagVision.close();
+                switch (id) {
+                    case 21:
+                        colorSet.add(LimeLight.DetectedColor.GREEN);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        break;
+                    case 22:
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        colorSet.add(LimeLight.DetectedColor.GREEN);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        break;
+                    case 23:
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        colorSet.add(LimeLight.DetectedColor.GREEN);
+                        break;
+                    default:
+                        colorSet.add(LimeLight.DetectedColor.GREEN);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        colorSet.add(LimeLight.DetectedColor.PURPLE);
+                        break;
+                }
 
-                // Give the processor a brief pause to prevent flooding the logs
-                Thread.sleep(20);
-            }
+                for (int i = 0; i < colorSet.size(); i++) {
+                    int position = 0;
+                    boolean met = false;
+                    LimeLight.DetectedColor color;
+                    if (colorSet.get(i) == LimeLight.DetectedColor.GREEN) {
+                        color = LimeLight.DetectedColor.GREEN;
+                    } else if (colorSet.get(i) == LimeLight.DetectedColor.PURPLE) {
+                        color = LimeLight.DetectedColor.PURPLE;
+                     }
+                    for (int j = 0; j < camera.ballQueue.size(); j++) {
+                        if (colorSet.get(i) != camera.ballQueue.get(j)) {
+                            met = false;
+                        } else {
+                            met = true;
+                            position = j + 1;
+                            break;
+                        }
+                    }
+                    if (met = true) {
 
-            // 5. Clean up when the OpMode is finished
-            // This is important to release camera resources.
-            aprilTagVision.close();
-            switch(id) {
-                case 21:
-                    colorSet.add("green");
-                    colorSet.add("purple");
-                    colorSet.add("purple");
-                    break;
-                case 22:
-                    colorSet.add("purple");
-                    colorSet.add("green");
-                    colorSet.add("purple");
-                    break;
-                case 23:
-                    colorSet.add("purple");
-                    colorSet.add("purple");
-                    colorSet.add("green");
-                    break;
-                default:
-                    colorSet.add("green");
-                    colorSet.add("purple");
-                    colorSet.add("purple");
-                    break;
-            }
-
-            for (int i = 0; i < colorSet.size(); i++) {
-                if (colorSet.get(i) == "green") {
-                    LimeLight.DetectedColor greencolor = LimeLight.DetectedColor.GREEN;
-                    int position = greencolor.ordinal() + 1;
+                        robot.waitForInjector();
+                        switch (position) {
+                            case 1:
+                                while (robot.spinServoCurPos != SPIN_P1) {
+                                    if (robot.spinServoCurPos != SPIN_P1)
+                                        robot.spinServoSetPosition(SPIN_DECREMENT);
+                                    else
+                                        gamepad2.runRumbleEffect(spindexerRumbleL);
+                                }
+                            case 2:
+                                while (robot.spinServoCurPos != SPIN_P2) {
+                                    if (robot.spinServoCurPos != SPIN_P2)
+                                        robot.spinServoSetPosition(SPIN_DECREMENT);
+                                    else
+                                        gamepad2.runRumbleEffect(spindexerRumbleL);
+                                }
+                            case 3:
+                                while (robot.spinServoCurPos != SPIN_P3) {
+                                    if (robot.spinServoCurPos != SPIN_P3)
+                                        robot.spinServoSetPosition(SPIN_DECREMENT);
+                                    else
+                                        gamepad2.runRumbleEffect(spindexerRumbleL);
+                                }
+                        }
+                    }
                 }
             }
     /*---------------------------------------------------------------------------------*/
@@ -618,6 +664,10 @@ public abstract class Teleop extends LinearOpMode {
                 robot.intakeMotor.setPower(0.90);
                 intakeMotorOnFwd = true;
                 intakeMotorOnRev = false;
+                while ( robot.spinServoCurPos != SPIN_P1 ) {
+                    robot.waitForInjector();
+                    robot.spinServoSetPosition(SPIN_DECREMENT);
+                }
             } else{
                 robot.intakeMotor.setPower(0.00);
                 intakeMotorOnFwd = false;
