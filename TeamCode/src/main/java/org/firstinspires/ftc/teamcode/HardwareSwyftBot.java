@@ -197,8 +197,8 @@ public class HardwareSwyftBot
     public final static double R_EYELID_SERVO_UP   = 0.570;
     public final static double L_EYELID_SERVO_INIT = 0.440;
     public final static double L_EYELID_SERVO_UP   = 0.440;
-    public final static double R_EYELID_SERVO_DOWN = 0.360;
-    public final static double L_EYELID_SERVO_DOWN = 0.660;
+    public final static double R_EYELID_SERVO_DOWN = 0.295;
+    public final static double L_EYELID_SERVO_DOWN = 0.700;
 
     public enum EyelidState {
         EYELID_OPEN_BOTH,
@@ -218,11 +218,11 @@ public class HardwareSwyftBot
 
 //  public final static double LIFT_SERVO_INIT   = 0.490;  // ROBOT1
 //  public final static double LIFT_SERVO_RESET  = 0.490;
-    public final static double LIFT_SERVO_INIT   = 0.510;  // ROBOT2
-    public final static double LIFT_SERVO_RESET  = 0.510;
+    public final static double LIFT_SERVO_INIT   = 0.500;  // ROBOT2
+    public final static double LIFT_SERVO_RESET  = 0.500;
     public final static double LIFT_SERVO_INJECT = 0.310;
-    //   177 (182)  . . .    (236)  241           <-- 5deg tolerance on RESET and INJECT
-    public final static double LIFT_SERVO_RESET_ANG  = 182.0;  // 0.500 = 177.1deg
+    //   179 (184)  . . .    (236)  241           <-- 5deg tolerance on RESET and INJECT
+    public final static double LIFT_SERVO_RESET_ANG  = 184.0;  // 0.500 = 179.5deg
     public final static double LIFT_SERVO_INJECT_ANG = 236.0;  // 0.310 = 241.7deg
     //====== MOTIF CONSTANTS =====
     public enum MotifOptions {
@@ -394,8 +394,7 @@ public class HardwareSwyftBot
         turretServo.setPosition(TURRET_SERVO_INIT);
         shooterServo.setPosition(SHOOTER_SERVO_INIT);
         sleep(250);
-        if( isRobot1 )  spinServoSetPosition(SpindexerState.SPIN_P3); // allows autonomous progression 3-2-1
-        if( isRobot2 )  spinServoSetPositionCR(SpindexerState.SPIN_P2); // The 0.5 default position on init
+        spinServoSetPosition(SpindexerState.SPIN_P3); // allows autonomous progression 3-2-1
         // Also reset our odometry starting position
         odom.resetPosAndIMU();
     } // resetEncoders

@@ -168,7 +168,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
-                        liftPos -= servoStepSize;
+                        liftPos -= servoStepSize/2;
                         if( liftPos < 0.0 ) liftPos = 0.0;
                         if( liftPos > 1.0 ) liftPos = 1.0;
                         robot.liftServo.setPosition(liftPos);
@@ -219,7 +219,7 @@ public class TeleopPositionTest extends LinearOpMode {
                         robot.spinServo.setPosition(spinPos);
                         break;
                     case 4 :
-                        liftPos += servoStepSize;
+                        liftPos += servoStepSize/2;
                         if( liftPos < 0.0 ) liftPos = 0.0;
                         if( liftPos > 1.0 ) liftPos = 1.0;
                         robot.liftServo.setPosition(liftPos);
