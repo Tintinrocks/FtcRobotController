@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.LogoFacingDirection;
 import static com.qualcomm.hardware.rev.RevHubOrientationOnRobot.UsbFacingDirection;
-import static org.firstinspires.ftc.teamcode.GoBildaPinpointDriver.EncoderDirection;
-import static org.firstinspires.ftc.teamcode.GoBildaPinpointDriver.GoBildaOdometryPods;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -15,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -43,7 +42,8 @@ public class TestPinpointLimelight3A extends LinearOpMode {
     GoBildaPinpointDriver odom = null;
 
     //====== Limelight Camera ======
-    Limelight3A limelight;
+    Limelight3A limelight = null;
+    LimelightFusedPinpointOdometry llodo = null;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -51,13 +51,18 @@ public class TestPinpointLimelight3A extends LinearOpMode {
         initDrivetrain();
         initLimelight();
         initPinpointOdometry();
-        alignPinpointToLimelight();
+        llodo = new LimelightFusedPinpointOdometry(limelight, odom, telemetry, 0.0);
+        llodo.startPipeline(Alliance.BLUE);
+//        llodo.startPipeline(Alliance.RED);
+        llodo.alignPinpointToLimelightEveryLoop(true);
+//        alignPinpointToLimelight();
 
         telemetry.addData(">", "Robot Ready.  Press Play.");
         telemetry.update();
         waitForStart();
 
-        alignPinpointToLimelight();
+        llodo.alignPinpointToLimelightEveryLoop(true);
+//        alignPinpointToLimelight();
 
         while (opModeIsActive()) {
             LLStatus status = limelight.getStatus();
@@ -73,7 +78,8 @@ public class TestPinpointLimelight3A extends LinearOpMode {
             telemetry.update();
         }
 
-        limelight.stop();
+        llodo.stop();
+//        limelight.stop();
         driveTrainMotorsZero();
     }
 
@@ -216,11 +222,13 @@ public class TestPinpointLimelight3A extends LinearOpMode {
                 double posX   = -limelightPosition.unit.toInches(limelightPosition.x);  // Pinpoint +X (forward) matches Limelight +X (forward)
                 double posY   = -limelightPosition.unit.toInches(limelightPosition.y);  // Pinpoint +Y (left) opposite of Limelight +Y (right)
                 double angDeg = rotate180Yaw(limelightOrientation.getYaw(AngleUnit.DEGREES));
+                double[] stddev = llResult.getStddevMt2();
                 telemetry.addData("Limelight(Apriltag)", "x=%.2f y=%.2f %.2f deg", posX, posY, angDeg);
+                telemetry.addData("LL StdDev (x,y,yaw)", "x=%.2f y=%.2f %.2f deg", stddev[0], stddev[1], stddev[5]);
             }
             List<LLResultTypes.FiducialResult> fiducialResults = llResult.getFiducialResults();
             for (LLResultTypes.FiducialResult fr : fiducialResults) {
-                telemetry.addData("Fiducial", "ID: %d, Family: %s, X: %.2f, Y: %.2f", fr.getFiducialId(), fr.getFamily(), fr.getTargetXDegrees(), fr.getTargetYDegrees());
+                telemetry.addData("Fiducial", "ID: %d: %s, X: %.2f deg, Y: %.2f deg", fr.getFiducialId(), fr.getTargetXDegrees(), fr.getTargetYDegrees());
             }
             double captureLatency   = llResult.getCaptureLatency();
             double targetingLatency = llResult.getTargetingLatency();

@@ -150,16 +150,21 @@ public class AutonomousRedFar extends AutonomousBase {
         scoreThreeBallsFromFar( obeliskID );
 
         // Collect and Score 1st spike mark
-        collectSpikemark1FromFar( redAlliance,shooterPowerFar );
-        scoreThreeBallsFromFar( obeliskID );
+        if( doSpikeMark1 ) {
+            collectSpikemark1FromFar(redAlliance, shooterPowerFar);
+            scoreThreeBallsFromFar(obeliskID);
+        }
 
         // Collect and Score 2nd spike mark
-        collectSpikemark2FromFar( redAlliance,shooterPowerFar );
-        //scoreThreeBallsFromFar( obeliskID );    // NOT FAST ENOUGH FOR TOURNAMENT2 :-(
-            
+        if( doSpikeMark2 ) {
+            collectSpikemark2FromFar(redAlliance, shooterPowerFar);
+            //scoreThreeBallsFromFar( obeliskID );    // NOT FAST ENOUGH FOR TOURNAMENT2 :-(
+        }
         // Collect and Score 3rd spike mark
-        //collectSpikemark3FromFar( redAlliance,shooterPowerFar );
-        //scoreThreeBallsFromFar( obeliskID );
+        if( doSpikeMark3 ) {
+            collectSpikemark3FromFar( redAlliance,shooterPowerFar );
+            scoreThreeBallsFromFar( obeliskID );
+        }
 
         // Drive away from the score line for the MOVEMENT points
         //driveToPosition(32.0, 0.0, 0.0, DRIVE_SPEED_30, TURN_SPEED_30, DRIVE_TO);
@@ -167,10 +172,5 @@ public class AutonomousRedFar extends AutonomousBase {
         // ensure motors are turned off even if we run out of time
         robot.driveTrainMotorsZero();
     } // mainAutonomous
-
-
-    private void driveToFirstTickMark() {
-//        driveToPosition()
-    }
 
 } /* AutonomousRedFar */

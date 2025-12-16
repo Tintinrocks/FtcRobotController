@@ -189,7 +189,9 @@ public abstract class Teleop extends LinearOpMode {
             }
 
             if (gamepad1_r_bumper_now && !gamepad1_r_bumper_last) {
-                robot.shooterServo.setPosition(robot.computeAlignedFlapperPos());
+                // RIGHT BUTTON resets turret to the center
+                robot.turretServo.setPosition(robot.TURRET_SERVO_INIT);
+//              robot.shooterServo.setPosition(robot.computeAlignedFlapperPos());
             }
             //BRODY!!
 

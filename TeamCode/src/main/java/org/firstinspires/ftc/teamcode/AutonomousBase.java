@@ -91,8 +91,12 @@ public abstract class AutonomousBase extends LinearOpMode {
     String      storageDir;
     boolean     redAlliance      = true;  // Is alliance BLUE (true) or RED (false)?
     boolean     forceAlliance    = false; // Override vision pipeline? (toggled during init phase of autonomous)
+    boolean     doSpikeMark1     = true;
+    boolean     doSpikeMark2     = true;
+    boolean     doSpikeMark3     = false;
+    boolean     doSpikeMark0     = false;  // the 3 balls in the corner
     int         initMenuSelected = 1;    // start on the first entry
-    int         initMenuMax      = 2;    // we have 6 total entries
+    int         initMenuMax      = 4;    // we have 6 total entries
     int         startDelaySec    = 0;     // 1: wait [seconds] at startup -- applies to both left/rigth starting positions
     int         scoringZones     = 0;
 
@@ -229,6 +233,27 @@ public abstract class AutonomousBase extends LinearOpMode {
                   gateOption = gateOption.prev();
                 } // prev
                 break;
+            //-------------- COLLECT/SCORE SPIKEMARK 1 --------------
+            case 3 :
+                if( nextValue ) {
+                    doSpikeMark1 = !doSpikeMark1;
+                } // next
+
+                if( prevValue ) {
+                    doSpikeMark1 = !doSpikeMark1;
+                } // prev
+                break;
+            //-------------- COLLECT/SCORE SPIKEMARK 2 --------------
+            case 4 :
+                if( nextValue ) {
+                    doSpikeMark2 = !doSpikeMark2;
+                } // next
+
+                if( prevValue ) {
+                    doSpikeMark2 = !doSpikeMark2;
+                } // prev
+                break;
+            //-------------- SHOULDN'T GET HERE --------------
             default : // recover from bad state
                 initMenuSelected = 1;
                 break;
@@ -238,6 +263,8 @@ public abstract class AutonomousBase extends LinearOpMode {
         telemetry.addData("ALLIANCE", "%s", ((redAlliance)? "RED":"BLUE"));
         telemetry.addData("Start Delay",  "%d sec %s", startDelaySec, ((initMenuSelected==1)? "<-":"  ") );
         telemetry.addData("Open Gate", "%s %s", gateOption.getDescription(), ((initMenuSelected==2)? "<-":"  ") );
+        telemetry.addData("Do SpikeMark1", "%s %s", ((doSpikeMark1)?"yes":"no"), ((initMenuSelected==3)? "<-":"  ") );
+        telemetry.addData("Do SpikeMark2", "%s %s", ((doSpikeMark2)?"yes":"no"), ((initMenuSelected==4)? "<-":"  ") );
         telemetry.addData("Odometry","x=%.2f y=%.2f  %.2f deg",
                 robotGlobalXCoordinatePosition, robotGlobalYCoordinatePosition, Math.toDegrees(robotOrientationRadians) );
         telemetry.addLine("Preload=GPP (Green down thru shooter!)");
