@@ -361,8 +361,8 @@ public class HardwareSwyftBot
 
         //--------------------------------------------------------------------------------------------
         // Initialize the servos for the spindexer eyelids
-        rEyelidServo = hwMap.get(Servo.class, "rEyelidServo");
-        lEyelidServo = hwMap.get(Servo.class, "lEyelidServo");
+        rEyelidServo = hwMap.tryGet(Servo.class, "rEyelidServo");
+        lEyelidServo = hwMap.tryGet(Servo.class, "lEyelidServo");
 
         //--------------------------------------------------------------------------------------------
         // Initialize the servo for the injector/lifter
@@ -389,8 +389,10 @@ public class HardwareSwyftBot
     public void resetEncoders() throws InterruptedException {
         // Initialize the injector servo first! (so it's out of the way for spindexer rotation)
         liftServo.setPosition(LIFT_SERVO_INIT);
-        lEyelidServo.setPosition( L_EYELID_SERVO_INIT );
-        rEyelidServo.setPosition( R_EYELID_SERVO_INIT );
+        if( isRobot2 ) {
+            lEyelidServo.setPosition(L_EYELID_SERVO_INIT);
+            rEyelidServo.setPosition(R_EYELID_SERVO_INIT);
+        }
         turretServo.setPosition(TURRET_SERVO_INIT);
         shooterServo.setPosition(SHOOTER_SERVO_INIT);
         sleep(250);
